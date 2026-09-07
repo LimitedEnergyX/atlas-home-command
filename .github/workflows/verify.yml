@@ -1,0 +1,30 @@
+name: Verify Atlas
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python -m pip install ./orchestrator pytest
+      - run: python -m pytest orchestrator/tests -q
+      - run: for test in orchestrator/tests/test_*.cjs; do node "$test"; done
+      - run: npm ci --ignore-scripts && npm test
+        working-directory: services/powerwall
+      - run: python tools/check_release.py
+      - run: python tools/build_demo.py && node tools/test_demo.cjs && node tools/test_household_render.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-static-demo
+          path: dist

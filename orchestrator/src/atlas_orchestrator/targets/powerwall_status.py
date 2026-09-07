@@ -1,0 +1,197 @@
+from __future__ import annotations
+
+import json
+import urllib.parse
+import urllib.request
+from datetime import UTC, datetime, timedelta
+from typing import Any, Callable
+
+
+PowerwallReader = Callable[[str, float], dict[str, Any]]
+
+
+class PowerwallStatusTarget:
+    name = "powerwall-status"
+    writable = False
+
+    def __init__(
+        self,
+        endpoint: str,
+        timeout: float = 2.0,
+        reader: PowerwallReader | None = None,
+    ) -> None:
+        parsed = urllib.parse.urlsplit(endpoint)
+        if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            raise ValueError("Powerwall status endpoint must be loopback HTTP")
+        self.endpoint = endpoint
+        self.timeout = timeout
+        self._reader = reader or self._read
+
+    def status(self) -> dict[str, Any]:
+        try:
+            source = self._reader(self.endpoint, self.timeout)
+            today = source.get("financials", {}).get("today", {})
+            grid_kw = self._number(source.get("grid"))
+            financials = source.get("financials", {})
+            monthly = financials.get("monthly", {})
+            cycle = self._billing_cycle(source.get("polled_at"), monthly)
+            return {
+                "adapter": self.name,
+                "status": "healthy",
+                "polled_at": source.get("polled_at"),
+                "battery_pct": self._number(source.get("battery")),
+                "reserve_pct": self._number(source.get("reserve")),
+                "solar_kw": self._number(source.get("solar")),
+                "home_kw": self._number(source.get("home")),
+                "grid_kw": grid_kw,
+                "grid_direction": (
+                    "unknown" if grid_kw is None else "exporting" if grid_kw < 0 else "importing"
+                ),
+                "grid_up": bool(source.get("grid_up")),
+                "charging": bool(source.get("charging")),
+                "mode": source.get("mode"),
+                "today": {
+                    "solar_kwh": self._number(today.get("solar_kwh")),
+                    "home_kwh": self._number(today.get("home_kwh")),
+                    "import_kwh": self._number(today.get("import_kwh")),
+                    "export_kwh": self._number(today.get("export_kwh")),
+                    "solar_savings": self._number(today.get("solar_savings")),
+                },
+                "monthly": {
+                    "import_kwh": self._number(monthly.get("mtd_import_kwh")),
+                    "export_kwh": self._number(monthly.get("mtd_export_kwh")),
+                    "energy_charge": self._number(monthly.get("mtd_energy_charge")),
+                    "export_credit": self._number(monthly.get("mtd_export_credit")),
+                    "estimated_bill": self._number(monthly.get("est_bill")),
+                    "bank_balance": self._number(monthly.get("bank_balance")),
+                    "projected_import_kwh": self._number(monthly.get("mo_import_kwh")),
+                    "projected_export_kwh": self._number(monthly.get("mo_export_kwh")),
+                    **cycle,
+                },
+                "rates": {
+                    key: self._number(value)
+                    for key, value in financials.get("rates", {}).items()
+                    if key in {"energy", "buyback", "base", "tdu_fixed", "tdu_kwh", "grr", "tax_rate"}
+                },
+                "weather_alerts": [
+                    {
+                        "event": str(item.get("event") or "Weather alert"),
+                        "severity": item.get("severity"),
+                        "headline": item.get("headline"),
+                        "expires": item.get("expires"),
+                    }
+                    for item in source.get("weather_alerts", [])[:8]
+                    if isinstance(item, dict)
+                ],
+            }
+        except Exception as exc:
+            return {"adapter": self.name, "status": "unavailable", "reason": type(exc).__name__}
+
+    def forecast(self) -> dict[str, Any]:
+        try:
+            endpoint = self.endpoint.rsplit("/", 1)[0] + "/weather-forecast"
+            source = self._reader(endpoint, self.timeout + 3.0)
+            current = source.get("current", {})
+            hourly = source.get("hourly", [])
+            daily = source.get("daily", [])
+            return {
+                "adapter": self.name,
+                "status": "healthy",
+                "location": source.get("location"),
+                "current": {
+                    key: current.get(key)
+                    for key in ("temp_f", "feels_like_f", "humidity", "wind_mph", "wind_gust_mph", "wind_dir", "visibility_mi", "precip_in", "cloud_pct", "desc", "icon")
+                },
+                "hourly": [
+                    {
+                        key: item.get(key)
+                        for key in (
+                            "time", "temp_f", "feels_like_f", "humidity", "precip_prob",
+                            "precip_in", "wind_mph", "wind_gust_mph", "visibility_mi",
+                            "uv_index", "desc", "icon"
+                        )
+                    }
+                    for item in hourly[:48]
+                    if isinstance(item, dict) and item.get("time")
+                ],
+                "daily": [
+                    {key: item.get(key) for key in ("date", "temp_max", "temp_min", "precip_in", "precip_prob", "precip_hours", "wind_max", "uv_max", "sunrise", "sunset", "desc", "icon")}
+                    for item in daily[:10]
+                    if isinstance(item, dict)
+                ],
+                "observed_at": datetime.now(UTC).isoformat(),
+            }
+        except Exception as exc:
+            return {"adapter": self.name, "status": "unavailable", "reason": type(exc).__name__}
+
+    def calendar_source(self, kind: str, period: str, start: str, end: str) -> dict[str, Any]:
+        endpoint = self.endpoint.rsplit("/", 1)[0] + "/calendar-history?" + urllib.parse.urlencode({
+            "kind": kind, "period": period, "start_date": start, "end_date": end,
+            "time_zone": "America/Chicago",
+        })
+        return self._reader(endpoint, 30.0)
+
+    def history(self, range_name: str) -> dict[str, Any]:
+        if range_name not in {"day", "week", "month"}:
+            raise ValueError("range must be day, week, or month")
+        try:
+            endpoint = self.endpoint.rsplit("/", 1)[0] + "/energy-history?" + urllib.parse.urlencode({"range": range_name})
+            source = self._reader(endpoint, self.timeout + 3.0)
+            return {
+                "adapter": self.name,
+                "status": "healthy",
+                "range": range_name,
+                "window": source.get("window"),
+                "points": [
+                    {
+                        "at": str(point.get("at")),
+                        **{
+                            field: self._number(point.get(field))
+                            for field in ("solar_kw", "home_kw", "grid_kw", "battery_pct")
+                            if point.get(field) is not None
+                        },
+                    }
+                    for point in source.get("points", [])
+                    if isinstance(point, dict) and point.get("at")
+                ],
+            }
+        except Exception as exc:
+            return {"adapter": self.name, "status": "unavailable", "range": range_name, "reason": type(exc).__name__}
+
+    @staticmethod
+    def _billing_cycle(polled_at: Any, monthly: dict[str, Any]) -> dict[str, Any]:
+        try:
+            observed = datetime.fromisoformat(str(polled_at).replace("Z", "+00:00"))
+            days_elapsed = float(monthly.get("days_elapsed"))
+            cycle_days = int(round(float(monthly.get("cycle_days"))))
+            if cycle_days <= 0:
+                raise ValueError("invalid cycle")
+            start = observed.date() - timedelta(days=max(0, int(days_elapsed)))
+            end = start + timedelta(days=cycle_days - 1)
+            return {
+                "cycle_start": start.isoformat(),
+                "cycle_end": end.isoformat(),
+                "days_elapsed": round(days_elapsed, 1),
+                "days_remaining": max(0, (end - observed.date()).days),
+                "cycle_days": cycle_days,
+            }
+        except (TypeError, ValueError, OverflowError):
+            return {}
+
+    @staticmethod
+    def _read(endpoint: str, timeout: float) -> dict[str, Any]:
+        request = urllib.request.Request(endpoint, headers={"User-Agent": "Atlas-Energy-Status/1"})
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read(20_000_001)
+            if len(raw) > 20_000_000:
+                raise ValueError("Powerwall response is too large")
+            payload = json.loads(raw)
+        if not isinstance(payload, dict):
+            raise ValueError("Powerwall response must be an object")
+        return payload
+
+    @staticmethod
+    def _number(value: Any) -> float | None:
+        if isinstance(value, bool) or value is None:
+            return None
+        return round(float(value), 3)

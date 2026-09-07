@@ -1,0 +1,20 @@
+{
+  "name": "powerwall",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-calendar-history.cjs && node test-safe-defaults.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.35.0",
+    "axios": "^1.16.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

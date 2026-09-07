@@ -1,0 +1,29 @@
+:root { --demo-banner-height: 36px; }
+#demo-banner { position: fixed; inset: 0 0 auto; height: var(--demo-banner-height); box-sizing: border-box; display: grid; place-items: center; z-index: 200; text-align: center; padding: .35rem 1rem; font: 600 .8rem/1.4 system-ui,sans-serif; color: #a5eef7; background: #0d2633; border-bottom: 1px solid #2a5968; }
+.topbar { top: var(--demo-banner-height); }
+.module-rail { top: calc(var(--header) + var(--demo-banner-height)); }
+.workspace, body.home-active .workspace { padding-top: calc(var(--header) + var(--demo-banner-height) + 26px); }
+@media (max-width: 700px) {
+  :root { --demo-banner-height: 52px; }
+  .module-rail { top: auto; }
+  .workspace, body.home-active .workspace { padding-top: calc(var(--header) + var(--demo-banner-height) + 14px); }
+}
+[aria-disabled="true"] { cursor: not-allowed; opacity: .65; }
+.demo-section-note { color: #a5eef7; text-align: center; font-size: .85rem; }
+.demo-network { margin-block: 1.5rem; }
+.demo-network h2, .demo-recipes h2 { margin-bottom: .75rem; }
+.demo-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+.demo-metrics article, .demo-device-grid > article, .demo-device-grid > details { background: #0e1528; border: 1px solid #28364d; border-radius: 1rem; padding: 1rem; min-width: 0; }
+.demo-metrics article { display: grid; text-align: center; gap: .5rem; }
+.demo-metrics strong { font-size: clamp(1.1rem, 2vw, 1.5rem); }
+.demo-device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: .75rem; margin-block: 1rem; }
+.demo-device-grid h3 { font-size: 1rem; margin: 0 0 .5rem; }
+.demo-device-grid small { display: block; margin-top: .75rem; font-size: .875rem; }
+.demo-device-grid strong { color: #64d7e8; }
+.demo-network p, .demo-recipes p { font-size: .9375rem; line-height: 1.55; overflow-wrap: anywhere; }
+.demo-topology { padding: 1rem; background: #101f2c; border-radius: .75rem; text-align: center; }
+.demo-network summary, .demo-recipes summary { cursor: pointer; font-size: 1rem; padding-block: .5rem; }
+.demo-recipes { margin-top: 1.5rem; padding: 1.25rem; }
+.demo-port-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .5rem; }
+.demo-port-list p { margin: 0; padding: .5rem; }
+@media(max-width:600px) { .demo-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .demo-port-list { grid-template-columns: 1fr; } }

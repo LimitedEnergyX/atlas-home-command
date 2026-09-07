@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "host": "atlas-demo",
+  "services": [
+    {"id": "travel", "name": "Atlas Travel", "url": "http://127.0.0.1:8080/v1/travel", "required": true, "critical": true}
+  ],
+  "containers": [],
+  "health_log": {"max_age_seconds": 1800}
+}
