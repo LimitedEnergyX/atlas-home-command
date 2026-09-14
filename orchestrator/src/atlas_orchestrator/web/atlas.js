@@ -49,6 +49,8 @@ function activateTab(name, focus = false, updateHash = true) {
   }
   for (const panel of panels) panel.hidden = panel.id !== `panel-${name}`;
   document.body.classList.toggle("home-active", name === "home");
+  document.body.classList.toggle("agents-active", name === "agents");
+  if (name === "agents" && atlasChatDialog.open) closeAtlasChat();
   if (name === "pantry") renderPantryPage();
   if (name === "travel") renderTravelPage();
   if (name === "systems") renderEntityInventory();
@@ -505,6 +507,33 @@ function renderAgents() {
   document.getElementById("local-provider-name").textContent = state.atlas?.demo ? "Hermes · Illustrative Local Provider" : local?.available ? "Hermes · Local" : "Hermes · Local Unavailable";
 }
 
+function agentAnswerPresentation(content) {
+  const original = String(content ?? "");
+  const candidate = original.trim().replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i, "$1");
+  try {
+    const structured = JSON.parse(candidate);
+    if (structured && typeof structured.recommendation === "string" && structured.recommendation.trim()) {
+      return { text: structured.recommendation.trim(), details: original };
+    }
+  } catch (_) { /* Plain text and malformed JSON remain unchanged. */ }
+  return { text: original, details: null };
+}
+
+function renderAgentAnswer(article, content) {
+  const answer = agentAnswerPresentation(content);
+  article.querySelector("p").textContent = answer.text;
+  if (answer.details) {
+    const details = document.createElement("details");
+    details.className = "agent-answer-details";
+    const summary = document.createElement("summary");
+    summary.textContent = "Response details (proposals, not confirmed actions)";
+    const original = document.createElement("pre");
+    original.textContent = answer.details;
+    details.append(summary, original);
+    article.append(details);
+  }
+}
+
 function appendAgentMessage(role, content) {
   const transcript = document.getElementById("agent-transcript");
   const article = document.createElement("article");
@@ -521,6 +550,7 @@ function appendAgentMessage(role, content) {
 
 async function sendAgentMessage(message) {
   const send = document.getElementById("agent-chat-send");
+  if (send.disabled) return;
   const routeStatus = document.getElementById("agent-route-status");
   appendAgentMessage("user", message);
   const pending = appendAgentMessage("assistant pending", "Thinking locally…");
@@ -534,7 +564,7 @@ async function sendAgentMessage(message) {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-    pending.querySelector("p").textContent = payload.answer;
+    renderAgentAnswer(pending, payload.answer);
     pending.classList.remove("pending");
     state.agentHistory.push({ role: "user", content: message }, { role: "assistant", content: payload.answer });
     state.agentHistory = state.agentHistory.slice(-12);
@@ -542,7 +572,7 @@ async function sendAgentMessage(message) {
     const provider = route.local_only ? "Hermes · Local" : "Hermes · Reviewed";
     document.getElementById("agent-route-title").textContent = route.escalation_recommended ? "Independent Review Suggested" : "Local Route Complete";
     document.getElementById("agent-route-detail").textContent = route.escalation_reason || "The local model completed this request.";
-    routeStatus.textContent = `${provider} · ${Math.round((payload.confidence || 0) * 100)}% confidence · No cloud spend`;
+    routeStatus.textContent = `${provider} · No cloud spend`;
   } catch (error) {
     pending.querySelector("p").textContent = `I could not complete that request: ${error.message}`;
     pending.classList.remove("pending");
@@ -954,7 +984,7 @@ function renderTravelDetail(tripId) {
   tripType.textContent = titleCase(trip.trip_type || "unclassified");
   document.getElementById("travel-detail-verified").textContent = `${trip.readiness?.verified || 0} / ${trip.readiness?.required || 0}`;
   document.getElementById("travel-detail-charged").textContent = travelCosts([trip], "paid");
-  document.getElementById("travel-detail-charged-note").textContent = trip.costs?.unknown_paid ? "Fees ;" : "Paid";
+  document.getElementById("travel-detail-charged-note").textContent = trip.costs?.unknown_paid ? "Fees N/A" : "Paid";
   document.getElementById("travel-cost-help").replaceChildren(travelEvidence({title: "Paid Amounts", notes: (trip.charges || []).filter(charge => ["paid", "charged"].includes(charge.status)).map(charge =>
     charge.redemption ? `${charge.merchant}: ${charge.miles == null ? "Mileage quantity not recorded" : `${charge.miles} miles`}; ${charge.cash_fees == null ? "cash fees not recorded" : `${formatMoney(charge.cash_fees, charge.currency)} cash fees`}.` : `${charge.merchant}: ${charge.amount_known ? formatMoney(charge.amount, charge.currency) : "amount not recorded"}.`).join("\n")}));
   document.getElementById("travel-detail-later").textContent = travelCosts([trip], "later");
@@ -968,7 +998,7 @@ function renderTravelDetail(tripId) {
   document.getElementById("travel-review-open").textContent = good ? "Review Again" : "Review & Confirm";
   const coverages = trip.coverage || [];
   document.getElementById("travel-coverage-list").replaceChildren(...(coverages.length ? coverages.map(coverage => travelOperation(
-    coverage.name || "Coverage", [titleCase(coverage.status || "Unverified"), coverage.effective_from ? `${travelDate(coverage.effective_from)} – ${travelDate(coverage.effective_to)}` : "Dates ;"], coverage)) : [
+    coverage.name || "Coverage", [titleCase(coverage.status || "Unverified"), coverage.effective_from ? `${travelDate(coverage.effective_from)} – ${travelDate(coverage.effective_to)}` : "Dates N/A"], coverage)) : [
       Object.assign(document.createElement("strong"), {textContent: "Not Verified"}),
       travelEvidence({title: "Coverage", notes: "Payment with Configured card does not establish insurance eligibility. Coverage scope and effective dates still need verification."})]));
 
@@ -982,7 +1012,7 @@ function renderTravelDetail(tripId) {
     const status = document.createElement("b"); status.textContent = reservation.status === "not-needed" ? "Not Needed" : confirmed ? "✓ Confirmed" : "Review";
     const provider = document.createElement("span"); provider.textContent = reservation.provider;
     const note = document.createElement("small");
-    note.textContent = reservation.status === "not-needed" ? "" : reservation.confirmation ? `# ${reservation.confirmation}` : "Confirmation ;";
+    note.textContent = reservation.status === "not-needed" ? "" : reservation.confirmation ? `# ${reservation.confirmation}` : "Confirmation N/A";
     item.append(title, status, provider, note, travelEvidence({...reservation, title: `${reservation.type} · ${reservation.provider}`}));
     return item;
   }) : [travelEmpty("No reservation requirements have been entered for this trip.")]));
@@ -1041,7 +1071,7 @@ function renderTravelDetail(tripId) {
       const name = document.createElement("strong"); name.textContent = lounge.name;
       const badge = document.createElement("b"); badge.textContent = lounge.access === "unavailable" ? "✕ Unavailable" : "Check Access";
       const location = document.createElement("span"); location.textContent = lounge.terminal;
-      const hours = !lounge.hours || /verify|pending|unknown/i.test(lounge.hours) ? "Hours ;" : lounge.hours;
+      const hours = !lounge.hours || /verify|pending|unknown/i.test(lounge.hours) ? "Hours N/A" : lounge.hours;
       const basis = document.createElement("small"); basis.textContent = lounge.network === "USO" ? hours : `${trip.financials?.card_label || "Configured card"} · ${hours}`;
       loungeCard.append(name, badge, location, basis, travelEvidence({...lounge, detail: `Access is conditional on card, fare, remaining visits, operating hours and guest rules. Flight: ${segment.flight_number} · ${segment.cabin} · ${segment.fare}`}));
       return loungeCard;
@@ -1130,8 +1160,8 @@ function energyCards() {
   }
   const gridValue = Math.abs(Number(energy.grid_kw));
   return [
-      ["Solar Production", formatNumber(energy.solar_kw, " kW", 2), `${formatNumber(energy.today?.solar_kwh, " kWh")} Generated ${energy.recorded_date ? energy.recorded_date : "Today"}`],
-      ["Home Demand", formatNumber(energy.home_kw, " kW", 2), `${formatNumber(energy.today?.home_kwh, " kWh")} Used ${energy.recorded_date ? energy.recorded_date : "Today"}`],
+    ["Solar Production", formatNumber(energy.solar_kw, " kW", 2), `${formatNumber(energy.today?.solar_kwh, " kWh")} Generated ${energy.recorded_date ? energy.recorded_date : "Today"}`],
+    ["Home Demand", formatNumber(energy.home_kw, " kW", 2), `${formatNumber(energy.today?.home_kwh, " kWh")} Used ${energy.recorded_date ? energy.recorded_date : "Today"}`],
     ["Battery", formatNumber(energy.battery_pct, "%"), `${energy.charging ? "Charging" : "Holding"} · ${formatNumber(energy.reserve_pct, "%")} Reserve`],
     ["Grid", formatNumber(gridValue, " kW", 2), `${titleCase(safeText(energy.grid_direction))} · Grid ${energy.grid_up ? "Online" : "Offline"}`],
   ];
@@ -1333,10 +1363,10 @@ function renderEnergyPage() {
     document.getElementById(`energy-page-${ids[index]}`).textContent = card[1];
   });
   document.getElementById("energy-page-solar-note").textContent = cards[0][2];
-  const homeDemandNote = document.getElementById("energy-page-home-note");
-  if (homeDemandNote) homeDemandNote.textContent = state.energy?.recorded_date ? "Recorded Household Load" : "Current Household Load";
   document.getElementById("energy-page-battery-note").textContent = cards[2][2];
   document.getElementById("energy-page-grid-note").textContent = cards[3][2];
+  const homeDemandNote = document.getElementById("energy-page-home-note");
+  if (homeDemandNote) homeDemandNote.textContent = state.energy?.recorded_date ? "Recorded Household Load" : "Current Household Load";
   document.getElementById("energy-observed").textContent = state.energy?.polled_at ? `Updated ${humanTime(state.energy.polled_at)}` : "Local data unavailable";
   if (state.energy?.recorded_date) document.getElementById("energy-observed").textContent = `Recorded ${state.energy.recorded_date} · Historical power snapshot`;
 
@@ -2154,6 +2184,10 @@ document.getElementById("profile-pin-panel").addEventListener("submit", async (e
 });
 for (const button of document.querySelectorAll("[data-agent-open]")) {
   button.addEventListener("click", () => {
+    if (button.dataset.agentOpen === "openwebui" && window.matchMedia("(max-width: 700px)").matches) {
+      document.getElementById("agent-route-status").textContent = "Open WebUI is available on the Atlas PC only. Use this local Hermes chat from your phone.";
+      return;
+    }
     const destination = button.dataset.agentOpen === "chatgpt" ? externalDestinations.chatgpt : householdUrl(17085);
     window.open(destination, "_blank", "noopener");
   });
@@ -2214,6 +2248,41 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("resize", () => {
   if (location.hash === "#environment") renderEnvironmentCharts();
   if (location.hash === "#energy") renderEnergyHistory();
+});
+// Move the existing chat, rather than cloning it, to keep one transcript and route.
+const atlasChatLauncher = document.getElementById("atlas-chat-launcher");
+const atlasChatDialog = document.getElementById("atlas-chat-dialog");
+const atlasSharedChat = document.querySelector("#panel-agents .agent-chat");
+const atlasChatHome = document.createComment("Shared Atlas chat home");
+atlasSharedChat.before(atlasChatHome);
+// Follow the visible viewport when a tablet or phone keyboard opens.
+function syncAgentViewport() {
+  const viewport = window.visualViewport;
+  document.documentElement.style.setProperty("--agent-viewport-height", `${viewport?.height || window.innerHeight}px`);
+  document.documentElement.style.setProperty("--agent-viewport-top", `${viewport?.offsetTop || 0}px`);
+}
+window.visualViewport?.addEventListener("resize", syncAgentViewport);
+window.visualViewport?.addEventListener("scroll", syncAgentViewport);
+window.addEventListener("resize", syncAgentViewport);
+syncAgentViewport();
+function closeAtlasChat() {
+  if (atlasChatDialog.open) atlasChatDialog.close();
+}
+atlasChatLauncher.addEventListener("click", () => {
+  if (atlasChatDialog.open) { closeAtlasChat(); return; }
+  document.getElementById("atlas-chat-body").append(atlasSharedChat);
+  atlasChatDialog.show();
+  atlasChatLauncher.setAttribute("aria-expanded", "true");
+  document.getElementById("agent-chat-input").focus();
+});
+document.getElementById("atlas-chat-close").addEventListener("click", closeAtlasChat);
+atlasChatDialog.addEventListener("close", () => {
+  atlasChatHome.after(atlasSharedChat);
+  atlasChatLauncher.setAttribute("aria-expanded", "false");
+  atlasChatLauncher.focus();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && atlasChatDialog.open) closeAtlasChat();
 });
 updateClock();
 setInterval(updateClock, 30_000);

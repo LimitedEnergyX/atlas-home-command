@@ -182,7 +182,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('id="agent-chat-form"', page)
         self.assertIn('id="agent-transcript"', page)
         self.assertIn('id="agent-route-status"', page)
-        self.assertIn('<h1>OLYMPUS · AGENTS</h1>', page)
+        self.assertIn('<h1>Chat with Atlas</h1>', page)
         self.assertNotIn("Shift+Enter for a new line", page)
         self.assertNotIn("Cloud comparison is never automatic", page)
         self.assertIn('fetch("/v1/chat"', source)
@@ -490,7 +490,7 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(re.findall(r'<h1[^>]*>(.*?)</h1>', page), [
             "ATHENA · SYSTEMS", "SOL · ENERGY", "AEOLUS · ENVIRONMENT",
             "TITAN · SECURITY", "DEMETER · PANTRY", "ORACLE · TRAVEL",
-            "VULCAN · MAINTENANCE", "OLYMPUS · AGENTS", "Notifications",
+            "VULCAN · MAINTENANCE", "Chat with Atlas", "Notifications",
         ])
         self.assertNotIn('class="eyebrow"', page)
         for removed_id in ("preview-eyebrow", "control-dialog-eyebrow"):
@@ -554,7 +554,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('id="weather-daily-list"', page)
         self.assertNotIn('KXXX_loop.gif', page)
         self.assertIn('id="weather-radar-unconfigured"', page)
-        self.assertIn('Auto-Playing', page)
+        self.assertIn('Regional radar', page)
         self.assertIn('id="open-radar"', page)
         self.assertIn('function renderOutdoorWeather()', source)
         self.assertIn('radarImage.dataset.radarBucket', source)

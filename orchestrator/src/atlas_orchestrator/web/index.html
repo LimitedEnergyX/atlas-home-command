@@ -7,10 +7,10 @@
     <title>Atlas · Household Command</title>
     <meta name="description" content="Local household operations and intelligence.">
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
-    <link rel="stylesheet" href="/assets/atlas.css?v=20260907-maintenance">
+    <link rel="stylesheet" href="/assets/atlas.css?v=20260914-public">
     <script src="/assets/energy-ui.js?v=20260906-compact-balanced" defer></script>
     <script src="/assets/maintenance-ui.js?v=20260907-maintenance" defer></script>
-    <script src="/assets/atlas.js?v=20260907-maintenance" defer></script>
+    <script src="/assets/atlas.js?v=20260914-public" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#workspace">Skip to command workspace</a>
@@ -214,7 +214,7 @@
           </section>
           <section class="weather-command" aria-labelledby="outdoor-weather-title">
             <div class="section-heading weather-command-heading">
-              <div><h2 id="outdoor-weather-title">Weather Command</h2><p id="weather-location">Example Region, TX</p></div>
+              <div><h2 id="outdoor-weather-title">Weather Command</h2><p id="weather-location">Configure your region</p></div>
               <a class="embedded-app-link" id="open-radar" href="https://radar.weather.gov/?vm=r" target="_blank" rel="noopener">Open Interactive Radar <span aria-hidden="true">↗</span></a>
             </div>
             <div class="weather-alert-list" id="weather-alert-list" hidden></div>
@@ -224,7 +224,7 @@
                 <div class="weather-fact-grid" id="weather-fact-grid"><p class="empty-state">Loading Current Conditions…</p></div>
               </article>
               <article class="weather-radar-card">
-                <div><h3>Live Radar</h3><span>NWS KXXX · Auto-Playing</span></div>
+                <div><h3>Live Radar</h3><span>Regional radar · Not configured</span></div>
                 <a class="weather-radar-link" href="https://radar.weather.gov/?vm=r" target="_blank" rel="noopener" aria-label="Open The Full Interactive National Weather Service Radar">
                   <p id="weather-radar-unconfigured">Configure a regional radar source for your installation.</p>
                   <span>Open Full Interactive Radar <b aria-hidden="true">↗</b></span>
@@ -243,7 +243,7 @@
         </section>
         <section class="tab-panel security-panel" role="tabpanel" id="panel-security" aria-labelledby="tab-security" hidden>
           <header class="page-heading security-heading"><div><h1>TITAN · SECURITY</h1><p>Physical awareness first, with Atlas cyber health and a separate vacation-only secondary IDS.</p></div><span class="independence-note">Primary monitored alarm remains standalone</span></header>
-          <section class="ids-panel" id="ids-panel"><div class="ids-copy"><h2 id="ids-state">Vacation IDS · Checking Coverage</h2><p id="ids-detail">Reading Echo ultrasonic motion sensors…</p><div class="ids-sensors" id="ids-sensors"></div></div><div class="ids-control"><span id="ids-mode">Disarmed</span><button type="button" id="ids-arm" hidden>Arm Vacation IDS</button><button type="button" id="ids-confirm" hidden>Confirm Arm</button><button type="button" id="ids-cancel" hidden>Cancel</button><p id="ids-control-status" aria-live="polite"></p></div></section>
+          <section class="ids-panel" id="ids-panel"><div class="ids-copy"><h2 id="ids-state">Vacation IDS · Checking Coverage</h2><p id="ids-detail">Reading configured motion sensors…</p><div class="ids-sensors" id="ids-sensors"></div></div><div class="ids-control"><span id="ids-mode">Disarmed</span><button type="button" id="ids-arm" hidden>Arm Vacation IDS</button><button type="button" id="ids-confirm" hidden>Confirm Arm</button><button type="button" id="ids-cancel" hidden>Cancel</button><p id="ids-control-status" aria-live="polite"></p></div></section>
           <section class="status-section cyber-section"><div class="section-heading"><div><h2>Atlas PC · Cyber Health</h2></div><span class="independence-note" id="security-server-summary">Awaiting Collector</span></div><div class="security-gauge-grid" id="security-gauge-grid"></div><div class="status-list compact" id="security-control-list"></div><h3>Detection Review</h3><div class="status-list compact" id="cyber-finding-list"></div><details class="cyber-method"><summary>Coverage &amp; Method</summary><p id="cyber-coverage-note"></p><p>Checks every five minutes. Events are grouped, not counted as confirmed attacks. Only selected detection rules are covered; this is not a full security audit. Command lines and raw event messages stay out of Atlas. The planned UniFi example is separate from these endpoint checks. No network assessment has been performed.</p><a class="embedded-app-link" id="open-sysmon" href="#" target="_blank" rel="noopener">Historical Grafana Charts</a></details></section>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
@@ -372,16 +372,20 @@
           <p class="maintenance-note">Records are shared by this household. Service dates are entered by you, not inferred from sensor readings.</p>
         </section>
         <section class="tab-panel agents-panel" role="tabpanel" id="panel-agents" aria-labelledby="tab-agents" hidden>
-          <header class="page-heading agent-heading"><div><h1>OLYMPUS · AGENTS</h1><p>Hermes is your private guide through Atlas and routes requests for independent review when it would add value.</p></div><div class="agent-provider-summary"><strong id="local-provider-name">Hermes</strong><small id="provider-count">Checking Providers</small></div></header>
+          <header class="page-heading agent-heading"><div><h1>Chat with Atlas</h1><p>Powered by local Hermes</p></div><div class="agent-provider-summary"><strong id="local-provider-name">Hermes</strong><small id="provider-count">Checking Providers</small></div><button class="text-button" type="button" data-tab-target="home">Return Home</button></header>
           <section class="agent-chat" aria-label="Hermes chat">
             <div class="agent-transcript" id="agent-transcript" role="log" aria-live="polite"><article class="agent-message assistant"><span>Hermes</span><p>How can I help with the household, systems, planning, or research?</p></article></div>
             <form class="agent-compose" id="agent-chat-form"><label for="agent-chat-input">Message Hermes</label><div><textarea id="agent-chat-input" rows="2" maxlength="12000" placeholder="Ask Hermes anything…"></textarea><button type="submit" id="agent-chat-send">Send</button></div><p class="agent-route-status" id="agent-route-status">Auto route · Local first · No cloud spend</p></form>
           </section>
-          <section class="agent-routing-card"><div><strong id="agent-route-title">Local First</strong><small id="agent-route-detail">Routine requests stay private. Complex requests can be flagged for independent review.</small></div><div class="agent-secondary-actions"><button type="button" data-agent-open="chatgpt">Open ChatGPT</button><button type="button" data-agent-open="openwebui">Open Open WebUI</button></div></section>
-          <button class="text-button" type="button" data-tab-target="home">Return Home</button>
+          <details class="agent-chat-options"><summary>Chat options</summary><section class="agent-routing-card"><div><strong id="agent-route-title">Local First</strong><small id="agent-route-detail">Routine requests stay private. Complex requests can be flagged for independent review.</small></div><div class="agent-secondary-actions"><button type="button" data-agent-open="chatgpt">Open ChatGPT</button><button type="button" data-agent-open="openwebui" title="Host-only administration at 127.0.0.1:17085. Family chat stays inside Atlas.">Open WebUI (Atlas PC)</button></div></section></details>
         </section>
         <section class="tab-panel household-panel" role="tabpanel" id="panel-notifications" aria-labelledby="tab-notifications" hidden><header class="page-heading"><h1>Notifications</h1><p>Private messages remain on Atlas. Active system conditions stay visible until resolved.</p></header><div class="household-layout"><section class="household-compose"><h2>Send A Message</h2><label>To<select id="message-recipient"><option value="household">Household</option><option value="sam">Sam</option><option value="alex">Alex</option></select></label><label>Message<textarea id="message-body" maxlength="1000" rows="4" placeholder="Write a local household message"></textarea></label><button class="control-primary" type="button" id="send-message">Send Locally</button><p class="control-status" id="message-status" aria-live="polite"></p></section><section class="household-inbox"><h2>Inbox</h2><div id="system-notice-list"></div><div id="household-message-list"><p class="empty-state">Loading notifications…</p></div></section></div><button class="text-button" type="button" data-tab-target="home">Return Home</button></section>
       </main>
     </div>
+    <button class="atlas-chat-launcher" id="atlas-chat-launcher" type="button" aria-label="Chat with Atlas through local Hermes" aria-controls="atlas-chat-dialog" aria-expanded="false"><img src="/assets/greek/atlas.svg" alt="" width="64" height="64"></button>
+    <dialog class="atlas-chat-dialog" id="atlas-chat-dialog" aria-labelledby="atlas-chat-title">
+      <header class="atlas-chat-header"><div><strong id="atlas-chat-title">Atlas</strong><small>Powered by local Hermes</small></div><button id="atlas-chat-close" type="button" aria-label="Close Atlas chat">×</button></header>
+      <div id="atlas-chat-body"></div>
+    </dialog>
   </body>
 </html>

@@ -1,0 +1,135 @@
+name: atlas-home
+
+services:
+  influxdb:
+    image: influxdb@sha256:b8d940ca9376f85118260f5b6bd236b8a00b1749c3350c5578d4cde8e27f31f2
+    container_name: atlas-influxdb
+    profiles: [energy]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "127.0.0.1:17083:8086"
+    volumes:
+      - atlas_influxdb_data:/var/lib/influxdb2
+    healthcheck:
+      test: [CMD, influx, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [atlas-internal]
+
+  grafana:
+    image: grafana/grafana:13.2.0
+    container_name: atlas-grafana
+    profiles: [energy]
+    restart: unless-stopped
+    stop_grace_period: 15s
+    ports:
+      - "127.0.0.1:17084:3000"
+    volumes:
+      - atlas_grafana_data:/var/lib/grafana
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks: [atlas-internal]
+
+  homeassistant:
+    image: ${ATLAS_HOME_ASSISTANT_IMAGE:-ghcr.io/home-assistant/home-assistant:2026.5.4}
+    container_name: atlas-homeassistant
+    profiles: [home]
+    restart: unless-stopped
+    stop_grace_period: 60s
+    ports:
+      - "127.0.0.1:17081:8123"
+    environment:
+      TZ: America/Chicago
+    volumes:
+      - C:/ProgramData/Atlas/Data/HomeAssistant/config:/config
+    networks: [atlas-internal]
+
+  powerwall-adapter:
+    build:
+      context: ../services/powerwall
+    container_name: atlas-powerwall
+    profiles: [energy-container]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:17082:17082"
+    env_file:
+      - C:/ProgramData/Atlas/Data/Powerwall/.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "17082"
+      ATLAS_POWERWALL_DATA_DIR: /data
+      ATLAS_POWERWALL_ENV_PATH: /run/atlas-energy.env
+      ATLAS_INFLUX_ENABLED: "1"
+      INFLUX_URL: http://influxdb:8086
+      HA_HOST: homeassistant
+      HA_PORT: "8123"
+    volumes:
+      - C:/ProgramData/Atlas/Data/Powerwall:/data
+      - C:/ProgramData/Atlas/Data/Powerwall/.env:/run/atlas-energy.env
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks: [atlas-internal]
+
+  searxng:
+    image: searxng/searxng@sha256:11a9b34cdc0b1ec2b991470a2762ecb5a1a531898289fb51dcd015260450729e
+    container_name: atlas-searxng
+    profiles: [ai]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:17086:8080"
+    volumes:
+      - C:/ProgramData/Atlas/Data/SearXNG:/etc/searxng
+    networks: [atlas-internal]
+
+  ntfy:
+    image: binwiederhier/ntfy:v2.27.0
+    container_name: atlas-ntfy
+    profiles: [notifications]
+    restart: unless-stopped
+    command: serve
+    ports:
+      - "127.0.0.1:17087:80"
+    volumes:
+      - C:/ProgramData/Atlas/Data/Ntfy/config/server.yml:/etc/ntfy/server.yml:ro
+      - C:/ProgramData/Atlas/Data/Ntfy/data:/var/lib/ntfy
+    networks: [atlas-internal]
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.11.3@sha256:41daa0cf2561a5d4c8d1ff31ee2a98d93ab4d3ac2605cac69366ff6a3374a933
+    container_name: atlas-open-webui
+    environment:
+      WEBUI_SECRET_KEY_FILE: /app/backend/data/.webui_secret_key
+    profiles: [ai]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:17085:8080"
+    volumes:
+      - atlas_openwebui_data:/app/backend/data
+      # Hash-guarded v0.11.3 Atlas policy overlay. Review before changing the image version.
+      - <atlas-source-root>/services/openwebui-policy/ollama.py:/app/backend/open_webui/routers/ollama.py:ro
+      - <atlas-source-root>/services/openwebui-policy/openai.py:/app/backend/open_webui/routers/openai.py:ro
+      - <atlas-source-root>/services/openwebui-policy/atlas_rules_policy.py:/app/backend/open_webui/utils/atlas_rules_policy.py:ro
+    networks: [atlas-internal]
+
+networks:
+  atlas-internal:
+    name: atlas-home-internal
+
+volumes:
+  atlas_influxdb_data:
+    name: atlas_influxdb_data
+    external: true
+  atlas_grafana_data:
+    name: atlas_grafana_data
+    external: true
+  atlas_openwebui_data:
+    name: atlas_openwebui_data
+    external: true
+  atlas_openwebui_legacy:
+    name: atlas_openwebui_legacy
+    external: true

@@ -40,7 +40,7 @@ assert(!allText(nodes.get('travel-reservation-list')).includes('Confirmation Pen
 assert(allText(nodes.get('travel-lounge-list')).includes('Check Access'));
 assert(!nodes.get('travel-detail-charged').textContent.includes('$0.00'));
 assert.equal(nodes.get('travel-detail-charged').textContent,'MileagePlus Miles');
-assert.equal(nodes.get('travel-detail-charged-note').textContent,'Fees ;');
+assert.equal(nodes.get('travel-detail-charged-note').textContent,'Fees N/A');
 trip.trip_type='business';
 vm.runInContext('renderTravelDetail("test");',context);
 assert.equal(nodes.get('travel-expense-board').hidden,false);

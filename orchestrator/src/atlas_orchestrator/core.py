@@ -3,14 +3,18 @@ from __future__ import annotations
 import time
 import os
 import re
+import uuid
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from pathlib import Path
 from typing import Any
 
 from .config import Settings, configured_secrets
+from .ai_rules import load_ai_rules
 from .ledger import Ledger
 from .energy_store import EnergyStore
 from .maintenance import MaintenanceStore
+from .household_tools import HouseholdTools, authorized_commands, looks_like_household_command
+from .household_status import HouseholdStatus
 from .cyber import read_snapshot
 from .policy import ActionPolicy
 from .providers import AnthropicProvider, FakeProvider, OllamaProvider, OpenAIProvider, ProviderAdapter, XAIProvider
@@ -33,6 +37,8 @@ class AtlasOrchestrator:
         self.maintenance = MaintenanceStore(self.settings.data_dir / "maintenance.sqlite3")
         self.policy = ActionPolicy()
         home_token = os.environ.get("ATLAS_HOME_ASSISTANT_TOKEN", "")
+        self.household_tools = HouseholdTools(self.settings.home_assistant_url, home_token)
+        self.household_status = HouseholdStatus(self.household_tools)
         self.targets = {
             "status": StatusTarget(self.settings.data_dir),
             "jarvis-status": JarvisStatusTarget(
@@ -96,10 +102,14 @@ class AtlasOrchestrator:
         }
 
     def chat(self, raw: dict[str, Any]) -> dict[str, Any]:
+        load_ai_rules()
         message = raw.get("message")
         if not isinstance(message, str) or not message.strip():
             raise ValueError("message must be a non-empty string")
         message = message.strip()
+        dry_run = raw.get("dry_run", False)
+        if not isinstance(dry_run, bool):
+            raise ValueError("dry_run must be true or false")
         if len(message) > 12_000:
             raise ValueError("message must be 12000 characters or fewer")
 
@@ -107,16 +117,35 @@ class AtlasOrchestrator:
         if mode not in {"auto", "local", "review"}:
             raise ValueError("mode must be auto, local, or review")
         history = self._chat_history(raw.get("history", []))
+        authorized = authorized_commands(message)
         task_class = self._classify_chat_task(message)
         spend_limit = raw.get("spend_limit", 0.0)
         if mode == "review" and (not isinstance(spend_limit, (int, float)) or float(spend_limit) <= 0):
             raise ValueError("multi-model review requires an explicit positive spend_limit")
+
+        observation = self.household_status.answer(message) if mode != 'review' else None
+        if observation is not None:
+            request_id = str(uuid.uuid4())
+            self.ledger.append('household_chat_status', request_id, observation)
+            return {
+                'status': observation['status'], 'request_id': request_id,
+                'assistant': {'name': 'Hermes', 'workspace': 'Olympus', 'platform': 'Atlas'},
+                'answer': observation['answer'], 'execution': None,
+                'observation': observation, 'reasoning_summary': 'Fresh read-only Home Assistant query.',
+                'confidence': 0.0 if observation['status'] == 'partial' else 1.0,
+                'route': {'mode': mode, 'task_class': 'household_status', 'provider': 'home-assistant',
+                          'model': None, 'local_only': True, 'review_level': 'none',
+                          'escalation_recommended': False,
+                          'escalation_reason': 'Read-only local status; no model inference or cloud spend.'},
+            }
 
         request: dict[str, Any] = {
             "intent": message,
             "inputs": {
                 "conversation": history,
                 "latest_message": message,
+                "household_tools": self.household_tools.catalog(),
+                "authorized_household_commands": authorized or [],
                 "identity": {
                     "assistant": "Hermes",
                     "workspace": "Olympus",
@@ -150,15 +179,24 @@ class AtlasOrchestrator:
 
         result = self.orchestrate(request)
         selected = result.get("selected") or {}
+        commands = selected.get("tool_commands", [])
+        execution = None
+        if authorized or commands or looks_like_household_command(message):
+            if mode == "review":
+                execution = {"status": "blocked", "answer": "Household commands require the local chat route. Nothing was changed.", "results": []}
+            else:
+                execution = self.household_tools.execute(commands, message, dry_run=dry_run)
+            self.ledger.append("household_chat_execution", result["request_id"], execution)
         confidence = float(selected.get("confidence") or 0.0)
         escalation_recommended = mode == "auto" and (
             task_class in {"complex", "planning", "coding", "review"} or confidence < 0.7
         )
         return {
-            "status": result["status"],
+            "status": execution["status"] if execution else result["status"],
             "request_id": result["request_id"],
             "assistant": {"name": "Hermes", "workspace": "Olympus", "platform": "Atlas"},
-            "answer": selected.get("recommendation") or "I could not produce a local response.",
+            "answer": execution["answer"] if execution else selected.get("recommendation") or "I could not produce a local response.",
+            "execution": execution,
             "reasoning_summary": selected.get("reasoning_summary"),
             "confidence": confidence,
             "route": {
@@ -205,6 +243,7 @@ class AtlasOrchestrator:
         return "routine"
 
     def orchestrate(self, raw_request: dict[str, Any]) -> dict[str, Any]:
+        load_ai_rules()
         request = validate_request(raw_request)
         request_id = request["request_id"]
         self.ledger.append("request_received", request_id, request)
@@ -589,3 +628,4 @@ class AtlasOrchestrator:
             },
         )
         return result
+

@@ -96,6 +96,9 @@ def validate_action(raw: dict[str, Any]) -> dict[str, Any]:
 
 def normalized_provider_output(value: Any) -> dict[str, Any]:
     if isinstance(value, str):
+        # Accept a single complete fenced JSON object, never embedded prose/code.
+        import re
+        value = re.sub(r"^```(?:json)?\s*\n?([\s\S]*?)\n?```$", r"\1", value.strip(), flags=re.IGNORECASE)
         try:
             value = json.loads(value)
         except json.JSONDecodeError as exc:
@@ -121,7 +124,7 @@ def normalized_provider_output(value: Any) -> dict[str, Any]:
     confidence = float(data["confidence"])
     if not 0.0 <= confidence <= 1.0:
         raise ValueError("confidence must be between 0 and 1")
-    return {
+    output = {
         "recommendation": data["recommendation"],
         "reasoning_summary": data["reasoning_summary"],
         "assumptions": [str(item) for item in data["assumptions"]],
@@ -129,3 +132,7 @@ def normalized_provider_output(value: Any) -> dict[str, Any]:
         "confidence": confidence,
         "proposed_actions": [str(item) for item in data["proposed_actions"]],
     }
+    if "tool_commands" in data:
+        # Proposals remain untrusted until the household executor validates them.
+        output["tool_commands"] = data["tool_commands"]
+    return output

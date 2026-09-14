@@ -16,4 +16,4 @@ atlas-orchestrator = "atlas_orchestrator.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-atlas_orchestrator = ["web/*", "web/icons/*", "web/greek/*", "web/heroes/*"]
+atlas_orchestrator = ["web/*", "AI_RULES.md"]
