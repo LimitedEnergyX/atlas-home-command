@@ -22,6 +22,8 @@ jobs:
       - run: for test in orchestrator/tests/test_*.cjs; do node "$test"; done
       - run: npm ci --ignore-scripts && npm test
         working-directory: services/powerwall
+      - run: python -B -m unittest test_local test_recipe_command test_stock_command test_quantity test_ai_charter
+        working-directory: galleyquest/services/local_api
       - run: python tools/check_release.py
       - run: python tools/build_demo.py && node tools/test_demo.cjs && node tools/test_household_render.cjs
       - uses: actions/upload-artifact@v4

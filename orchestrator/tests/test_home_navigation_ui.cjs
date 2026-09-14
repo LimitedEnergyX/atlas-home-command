@@ -12,7 +12,7 @@ const tablist = element('module-rail');
 tablist.setAttribute('aria-orientation','vertical');
 const rail = modules.map(name => {const tab=element(`tab-${name}`);tab.dataset.tab=name;tab.closest=()=>tablist;return tab;});
 const panels = modules.map(name => ({id:`panel-${name}`,hidden:name!=='home'}));
-const context = {state:{preview:'home',forecast:null,home:null},tabs:rail,panels,location:{hash:'#home'},window:{scrollTo(){}},
+const context = {state:{preview:'home',forecast:null,home:null},tabs:rail,panels,location:{hash:'#home'},window:{scrollTo(){}},atlasChatDialog:{open:false},closeAtlasChat(){},syncAgentViewport(){},
   document:{querySelectorAll:()=>tiles,getElementById:element,body:{classList:{toggle(){}}}},
   setPreviewCards:cards=>{context.cards=cards;},homeCards:()=>[],energyCards:()=>[],homeEnvironmentSummary:()=>['72°F','Indoor'],
   environmentReading:()=>null,readingText:()=>'-',

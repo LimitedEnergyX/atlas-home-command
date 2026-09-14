@@ -609,12 +609,58 @@ h3 { margin-top: 0; margin-bottom: 0; font-size: clamp(16px, 1.35vw, 20px); line
 .profile-pin-panel button { padding: 0 16px; border: 1px solid rgba(103,232,249,.45); border-radius: 10px; color: #061019; font-weight: 750; background: var(--cyan); cursor: pointer; }
 .profile-pin-panel p { min-height: 1.3em; margin: 9px 0 0; color: var(--muted); font-size: 11px; }
 .agents-panel, .household-panel { width: 100%; max-width: 1500px; }
+.agents-active { overflow: hidden; }
+body.agents-active .topbar, body.agents-active .module-rail, body.agents-active .atlas-chat-launcher { display: none; }
+body.agents-active #panel-agents {
+  position: fixed; z-index: 90; left: 0; right: 0; top: var(--agent-viewport-top, 0px);
+  height: var(--agent-viewport-height, 100dvh); width: 100%; max-width: none; margin: 0;
+  box-sizing: border-box; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; overflow: hidden; background: #080e1d;
+}
+body.agents-active #panel-agents .agent-heading { margin: 0; padding: 0; align-items: center; gap: 10px; }
+body.agents-active #panel-agents .agent-heading h1 { margin: 0; font-size: clamp(18px, 3vw, 26px); text-align: left; }
+body.agents-active #panel-agents .agent-heading p { margin: 3px 0 0; font-size: 11px; }
+body.agents-active #panel-agents .agent-heading > .text-button { margin-left: auto; min-height: 44px; white-space: nowrap; }
+body.agents-active #panel-agents .agent-provider-summary { display: none; }
+body.agents-active #panel-agents .agent-chat { display: flex; flex-direction: column; min-height: 0; width: 100%; }
+body.agents-active #panel-agents .agent-transcript { flex: 1; min-height: 0; max-height: none; overscroll-behavior: contain; padding: 14px; }
+body.agents-active #panel-agents .agent-compose { flex: 0 0 auto; padding: 10px 12px; }
+body.agents-active #panel-agents .agent-compose > div { grid-template-columns: minmax(0, 1fr) auto; }
+body.agents-active #panel-agents .agent-compose textarea { resize: none; font-size: 16px; max-height: 100px; }
+body.agents-active #panel-agents .agent-compose button { min-width: 64px; min-height: 44px; }
+body.agents-active #panel-agents .agent-chat-options { font-size: 12px; max-height: 25vh; overflow: auto; }
+body.agents-active #panel-agents .agent-chat-options summary { cursor: pointer; padding: 4px; }
+body.agents-active #panel-agents .agent-routing-card { margin-top: 4px; padding: 8px 12px; flex-wrap: wrap; }
 .agent-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .agent-grid button { cursor: pointer; }
 .agent-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .agent-provider-summary { flex: 0 0 auto; display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 13px; text-align: right; background: rgba(13,17,34,.72); }
 .agent-provider-summary strong { color: var(--cyan); font-size: 13px; }
 .agent-provider-summary small { color: var(--muted); font-size: 10px; }
+.atlas-chat-launcher { position: fixed; z-index: 80; right: max(20px, env(safe-area-inset-right)); bottom: calc(20px + env(safe-area-inset-bottom)); width: 68px; height: 68px; padding: 0; overflow: hidden; border: 2px solid var(--cyan); border-radius: 50%; background: #060c20; box-shadow: 0 0 22px rgba(0,190,255,.3); cursor: pointer; }
+.atlas-chat-launcher img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.atlas-chat-launcher:focus-visible, .atlas-chat-header button:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+.atlas-chat-dialog { position: fixed; z-index: 81; inset: auto max(16px, env(safe-area-inset-right)) calc(100px + env(safe-area-inset-bottom)) auto; margin: 0; padding: 0; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); overflow: hidden; border: 1px solid var(--cyan); border-radius: 20px; color: var(--ink); background: #080e1d; box-shadow: 0 20px 60px rgba(0,0,0,.55); }
+.atlas-chat-dialog[open] { display: flex; flex-direction: column; height: 665px; }
+.atlas-chat-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.atlas-chat-header small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+.atlas-chat-header button { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: #121b2c; font-size: 24px; cursor: pointer; }
+#atlas-chat-body { display: flex; flex: 1; min-height: 0; }
+.atlas-chat-dialog .agent-chat { display: flex; flex-direction: column; min-height: 0; width: 100%; border: 0; border-radius: 0; }
+.atlas-chat-dialog .agent-transcript { flex: 1; min-height: 0; max-height: none; padding: 14px; }
+.atlas-chat-dialog .agent-compose { flex-shrink: 0; padding: 12px; }
+.atlas-chat-dialog .agent-compose > div { grid-template-columns: minmax(0,1fr) auto; }
+.atlas-chat-dialog .agent-compose button { min-width: 64px; min-height: 44px; }
+.atlas-chat-dialog .agent-compose textarea { resize: none; }
+.agent-answer-details { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.agent-answer-details summary { cursor: pointer; }
+.agent-answer-details pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow-y: auto; font-size: 11px; }
+@media (max-width: 700px) {
+  .atlas-chat-launcher { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .atlas-chat-dialog { bottom: calc(168px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 184px - env(safe-area-inset-bottom)); }
+  .atlas-chat-dialog[open] { height: 399px; }
+  .atlas-chat-dialog .agent-transcript { min-height: 0; }
+}
 .agent-chat { overflow: hidden; border: 1px solid rgba(184,124,255,.28); border-radius: 20px; background: radial-gradient(circle at 85% 0, rgba(121,73,189,.16), transparent 30rem), rgba(8,12,26,.92); }
 .agent-transcript { min-height: 380px; max-height: 58vh; display: grid; align-content: start; gap: 12px; overflow-y: auto; padding: 24px; }
 .agent-message { max-width: min(82%, 880px); display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 15px 15px 15px 4px; background: rgba(18,24,46,.9); }
@@ -793,7 +839,7 @@ h3 { margin-top: 0; margin-bottom: 0; font-size: clamp(16px, 1.35vw, 20px); line
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
 
-/* responsive Atlas artwork and shared navigation system. */
+/* 2026-08-20 responsive Atlas artwork and shared navigation system. */
 .nav-icon {
   --icon: none;
   display: inline-block;

@@ -1,0 +1,21 @@
+config.js
+versions/
+
+# Local-only consolidation area: household data, DB snapshots, credentials,
+# and the runnable offline harness. Never commit.
+.local/
+
+# Python bytecode caches from the recipe-maintenance toolkit.
+__pycache__/
+*.pyc
+
+# Local tooling / editor / deploy scratch — not part of the app.
+.claude/
+.netlify/
+null
+
+# Secrets kept locally — NEVER commit (DB password, etc.).
+private.txt
+
+# Runtime logs written by the local server task.
+scripts/*.log
