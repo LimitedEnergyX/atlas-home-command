@@ -7,10 +7,11 @@
     <title>Atlas · Household Command</title>
     <meta name="description" content="Local household operations and intelligence.">
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
-    <link rel="stylesheet" href="/assets/atlas.css?v=20260914-public">
-    <script src="/assets/energy-ui.js?v=20260906-compact-balanced" defer></script>
+    <link rel="stylesheet" href="/assets/atlas.css?v=20260924-athena-history">
+    <script src="/assets/energy-ui.js?v=20260924-athena-history" defer></script>
     <script src="/assets/maintenance-ui.js?v=20260907-maintenance" defer></script>
-    <script src="/assets/atlas.js?v=20260914-public" defer></script>
+    <script src="/assets/calendar-ui.js?v=20260924" defer></script>
+    <script src="/assets/atlas.js?v=20260924-athena-history" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#workspace">Skip to command workspace</a>
@@ -21,7 +22,7 @@
           <span><strong>ATLAS</strong><small>HOUSEHOLD COMMAND</small></span>
         </div>
         <div class="topbar-status">
-          <button class="weather-chip" type="button" id="top-weather" data-tab-target="environment" aria-label="Open Environment"><span id="top-weather-icon" aria-hidden="true">☼</span><strong id="top-weather-value">N/A</strong><small id="top-weather-detail">Weather</small></button>
+          <button class="weather-chip" type="button" id="top-weather" data-tab-target="environment" aria-label="Open Environment"><span id="top-weather-icon" aria-hidden="true">☼</span><strong id="top-weather-value">—</strong><small id="top-weather-detail">Weather</small></button>
           <time id="clock">--:--</time>
           <button class="icon-button" type="button" aria-label="Open notifications" data-tab-target="notifications">
             <span class="nav-icon icon-notifications" aria-hidden="true"></span><b id="notification-count" hidden></b>
@@ -34,11 +35,13 @@
 
       <nav class="module-rail" aria-label="Atlas modules" role="tablist" aria-orientation="vertical">
         <button class="module-tab active" type="button" role="tab" aria-selected="true" aria-controls="panel-home" id="tab-home" data-tab="home"><span class="nav-icon icon-home" aria-hidden="true"></span><b>Home</b></button>
+        <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-calendar" id="tab-calendar" data-tab="calendar"><span class="nav-icon icon-calendar" aria-hidden="true"></span><b>Calendar</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-energy" id="tab-energy" data-tab="energy"><span class="nav-icon icon-energy" aria-hidden="true"></span><b>Energy</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-environment" id="tab-environment" data-tab="environment"><span class="nav-icon icon-environment" aria-hidden="true"></span><b>Environment</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-security" id="tab-security" data-tab="security"><span class="nav-icon icon-security" aria-hidden="true"></span><b>Security</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-pantry" id="tab-pantry" data-tab="pantry"><span class="nav-icon icon-pantry" aria-hidden="true"></span><b>Pantry</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-travel" id="tab-travel" data-tab="travel"><span class="nav-icon icon-travel" aria-hidden="true"></span><b>Travel</b></button>
+        <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-argo" id="tab-argo" data-tab="argo"><span class="nav-icon icon-vehicles" aria-hidden="true"></span><b>Vehicles</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-maintenance" id="tab-maintenance" data-tab="maintenance"><span class="nav-icon icon-maintenance" aria-hidden="true"></span><b>Maintenance</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-systems" id="tab-systems" data-tab="systems"><span class="nav-icon icon-systems" aria-hidden="true"></span><b>Systems</b></button>
         <button class="module-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-agents" id="tab-agents" data-tab="agents"><span class="nav-icon icon-agents" aria-hidden="true"></span><b>Agents</b></button>
@@ -46,27 +49,33 @@
       </nav>
 
       <main id="workspace" class="workspace" tabindex="-1">
+        <section class="tab-panel calendar-panel" role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar" hidden>
+          <header class="page-heading"><h1>Calendar</h1><p>Appointments, Travel, And Household Plans</p></header>
+          <p id="calendar-source-status" class="independence-note" aria-live="polite">Loading saved calendar…</p>
+          <div class="calendar-toolbar"><button type="button" id="calendar-previous" aria-label="Previous month">‹</button><h2 id="calendar-month"></h2><button type="button" id="calendar-next" aria-label="Next month">›</button><button type="button" id="calendar-today">Today</button></div>
+          <div class="calendar-layout"><div id="calendar-grid" class="calendar-grid" aria-label="Calendar month"></div><section aria-labelledby="calendar-agenda-title"><h2 id="calendar-agenda-title">Upcoming</h2><div id="calendar-agenda" class="calendar-agenda"></div></section></div>
+        </section>
         <section class="tab-panel" role="tabpanel" id="panel-home" aria-labelledby="tab-home">
           <div class="home-canvas" aria-label="Atlas household command home">
             <div class="home-stage">
             <picture class="home-artwork">
-              <img src="/assets/heroes/atlas-home-desktop.png" alt="Atlas holding a connected globe above a fictional modern home at sunset">
+              <img src="/assets/heroes/atlas-home-desktop.png" alt="Illustration of Atlas holding a connected globe above a home at sunset">
             </picture>
 
             <section class="home-welcome" aria-label="Welcome and quick assistant access">
               <span><strong id="home-greeting">Welcome Home, Alex.</strong><small>Household Command Is Ready.</small></span>
             </section>
 
-            <nav class="home-module-grid" aria-label="Household modules">
-              <button type="button" data-tab-target="home"><span class="nav-icon icon-home" aria-hidden="true"></span><strong>Home</strong><small>Overview &amp; Controls</small><span class="greek-association"><img src="/assets/greek/vesta.png" alt=""><b>Vesta</b></span></button>
-              <button type="button" data-tab-target="energy"><span class="nav-icon icon-energy" aria-hidden="true"></span><strong>Energy</strong><small>Power &amp; Efficiency</small><span class="greek-association"><img src="/assets/greek/sol.png" alt=""><b>Sol</b></span></button>
-              <button type="button" data-tab-target="environment"><span class="nav-icon icon-environment" aria-hidden="true"></span><strong>Environment</strong><small>Climate &amp; Air</small><span class="greek-association"><img src="/assets/greek/aeolus.png" alt=""><b>Aeolus</b></span></button>
-              <button type="button" data-tab-target="security"><span class="nav-icon icon-security" aria-hidden="true"></span><strong>Security</strong><small>Protect &amp; Monitor</small><span class="greek-association"><img src="/assets/greek/titan.png" alt=""><b>Titan</b></span></button>
-              <button type="button" data-tab-target="pantry"><span class="nav-icon icon-pantry" aria-hidden="true"></span><strong>Pantry</strong><small>Meals &amp; Groceries</small><span class="greek-association"><img src="/assets/greek/demeter.png" alt=""><b>Demeter</b></span></button>
-              <button type="button" data-tab-target="travel"><span class="nav-icon icon-travel" aria-hidden="true"></span><strong>Travel</strong><small>Trips &amp; Itineraries</small><span class="greek-association"><img src="/assets/greek/oracle.png" alt=""><b>Oracle</b></span></button>
-              <button type="button" data-tab-target="maintenance" data-alex-home><span class="nav-icon icon-maintenance" aria-hidden="true"></span><strong>Maintenance</strong><small>Service &amp; Upkeep</small><span class="greek-association"><img src="/assets/greek/vulcan.png" alt=""><b>Vulcan</b></span></button>
-              <button type="button" data-tab-target="systems" data-alex-home><span class="nav-icon icon-systems" aria-hidden="true"></span><strong>Systems</strong><small>Devices &amp; Integrations</small><span class="greek-association"><img src="/assets/greek/athena.png" alt=""><b>Athena</b></span></button>
-              <button type="button" data-tab-target="agents" data-alex-home><span class="nav-icon icon-agents" aria-hidden="true"></span><strong>Agents</strong><small>AI &amp; Automation</small><span class="greek-association"><img src="/assets/greek/olympus.png" alt=""><b>Olympus</b></span></button>
+<nav class="home-module-grid" aria-label="Household modules">
+              <button type="button" data-tab-target="home"><strong>Home</strong><small>Overview &amp; Controls</small><span class="greek-association"><img src="/assets/greek/vesta.png" alt=""><b>Vesta</b></span></button>
+              <button type="button" data-tab-target="energy"><strong>Energy</strong><small>Power &amp; Efficiency</small><span class="greek-association"><img src="/assets/greek/sol.png" alt=""><b>Sol</b></span></button>
+              <button type="button" data-tab-target="environment"><strong>Environment</strong><small>Climate &amp; Air</small><span class="greek-association"><img src="/assets/greek/aeolus.png" alt=""><b>Aeolus</b></span></button>
+              <button type="button" data-tab-target="security"><strong>Security</strong><small>Protect &amp; Monitor</small><span class="greek-association"><img src="/assets/greek/titan.png" alt=""><b>Titan</b></span></button>
+              <button type="button" data-tab-target="pantry"><strong>Pantry</strong><small>Meals &amp; Groceries</small><span class="greek-association"><img src="/assets/greek/demeter.png" alt=""><b>Demeter</b></span></button>
+              <button type="button" data-tab-target="travel"><strong>Travel</strong><small>Trips &amp; Itineraries</small><span class="greek-association"><img src="/assets/greek/oracle.png" alt=""><b>Oracle</b></span></button>
+              <button type="button" data-tab-target="argo"><strong>Vehicles</strong><small>Ownership &amp; Mobility</small><span class="greek-association"><img src="/assets/greek/argo.svg" alt=""><b>Argo</b></span></button>
+              <button type="button" data-tab-target="maintenance"><strong>Maintenance</strong><small>Service &amp; Upkeep</small><span class="greek-association"><img src="/assets/greek/vulcan.png" alt=""><b>Vulcan</b></span></button>
+              <button type="button" data-tab-target="systems"><strong>Systems</strong><small>Devices &amp; Integrations</small><span class="greek-association"><img src="/assets/greek/daedalus.svg" alt=""><b>Daedalus</b></span></button>
             </nav>
             </div>
             <section class="home-live-banner" aria-label="Live Atlas status and operational overview">
@@ -75,10 +84,10 @@
                 <span><strong id="overall-label">Connecting to Atlas</strong><small id="last-updated">Awaiting live status</small></span>
               </div>
               <section class="home-live-metrics" aria-label="Live operational overview">
-                <button type="button" data-preview-action="hvac"><span>HVAC</span><strong id="metric-hvac">N/A</strong><small id="metric-hvac-note">Temperature Controls</small></button>
-                <button type="button" data-preview-action="environment"><span>Environment</span><strong id="metric-environment">N/A</strong><small id="metric-environment-note">Indoor Range · AQI</small></button>
-                <button type="button" data-preview-action="energy"><span>Battery</span><strong id="metric-energy">N/A</strong><small id="metric-energy-note">Solar And Storage</small></button>
-                <button type="button" data-preview-action="galleyquest"><span>Pantry</span><strong id="metric-pantry">N/A</strong><small id="metric-pantry-note"></small></button>
+                <button type="button" data-preview-action="hvac"><span>HVAC</span><strong id="metric-hvac">—</strong><small id="metric-hvac-note">Temperature Controls</small></button>
+                <button type="button" data-preview-action="environment"><span>Environment</span><strong id="metric-environment">—</strong><small id="metric-environment-note">Indoor Range · AQI</small></button>
+                <button type="button" data-preview-action="energy"><span>Battery</span><strong id="metric-energy">—</strong><small id="metric-energy-note">Solar And Storage</small></button>
+                <button type="button" data-preview-action="galleyquest"><span>Pantry</span><strong id="metric-pantry">—</strong><small id="metric-pantry-note"></small></button>
               </section>
               <div class="home-banner-actions">
                 <button class="banner-action" type="button" id="refresh-status">Refresh</button>
@@ -87,36 +96,19 @@
             </section>
           </div>
 
+          <section class="quick-light-strip" aria-labelledby="home-lights-title"><header><h2 id="home-lights-title">Lights</h2></header><div id="quick-light-controls" aria-live="polite"><p class="empty-state">Loading light controls…</p></div></section>
           <section class="hvac-inline" id="home-hvac" aria-labelledby="home-hvac-title">
             <header><h2 id="home-hvac-title">HVAC</h2><p data-hvac-operation>Connecting to thermostat</p></header>
-            <div class="hvac-inline-reading"><span>Current</span><strong data-hvac-current>N/A</strong></div>
+            <div class="hvac-inline-reading"><span>Current</span><strong data-hvac-current>—</strong></div>
             <div class="hvac-inline-setpoint" role="group" aria-label="Home target temperature">
               <button type="button" data-hvac-adjust="-1" aria-label="Lower target temperature" disabled>−</button>
-              <div><span>Target</span><strong data-hvac-target>N/A</strong></div>
+              <div><span>Target</span><strong data-hvac-target>—</strong></div>
               <button type="button" data-hvac-adjust="1" aria-label="Raise target temperature" disabled>+</button>
             </div>
             <button class="hvac-inline-apply" type="button" data-hvac-apply disabled>Apply Temperature</button>
             <p class="control-status" data-hvac-status aria-live="polite"></p>
           </section>
 
-          <section class="home-preview" id="home-preview" aria-live="polite" data-preview="home">
-            <header class="home-preview-header">
-              <div><h2 id="preview-title">VESTA · HOME</h2><p id="preview-summary">Common household actions are one touch away.</p></div>
-              <button class="preview-action" type="button" id="open-preview" hidden>Review System Issue <span aria-hidden="true">→</span></button>
-            </header>
-            <div class="preview-grid">
-              <button class="preview-card" type="button" data-preview-action="environment"><img class="preview-card-image" alt="" hidden><span id="preview-label-1">Environment</span><strong id="preview-value-1">Climate</strong><small id="preview-note-1">Temperature And Air Quality</small></button>
-              <button class="preview-card" type="button" data-preview-action="hvac"><img class="preview-card-image" alt="" hidden><span id="preview-label-2">HVAC</span><strong id="preview-value-2">N/A</strong><small id="preview-note-2">Open Temperature Controls</small></button>
-              <button class="preview-card" type="button" data-preview-action="energy"><img class="preview-card-image" alt="" hidden><span id="preview-label-3">Energy</span><strong id="preview-value-3">N/A</strong><small id="preview-note-3">Solar And Battery</small></button>
-              <button class="preview-card" type="button" data-preview-action="security"><img class="preview-card-image" alt="" hidden><span id="preview-label-4">Cyber Health</span><strong id="preview-value-4">N/A</strong><small id="preview-note-4">Overall Health</small><span class="cyber-gauges" aria-label="Sysmon hardening gauges"><span class="cyber-gauge"><i><b>N/A</b></i><small>Overall</small></span><span class="cyber-gauge"><i><b>N/A</b></i><small>Network</small></span><span class="cyber-gauge"><i><b>N/A</b></i><small>System</small></span><span class="cyber-gauge"><i><b>N/A</b></i><small>Monitoring</small></span><span class="cyber-gauge"><i><b>N/A</b></i><small>Hygiene</small></span></span><span class="security-health-summary"><span>Atlas Server Health</span><strong id="security-health-status">Checking Atlas</strong><small id="security-health-detail">Awaiting live status</small></span></button>
-              <button class="preview-card" type="button" data-preview-action="galleyquest"><img class="preview-card-image" alt="" hidden><span id="preview-label-5">Staples On Hand</span><strong id="preview-value-5">N/A</strong><small id="preview-note-5">Household Basics</small></button>
-            </div>
-            <div class="home-travel-trips" id="home-travel-trips" hidden></div>
-            <section class="quick-light-strip" aria-labelledby="quick-lights-title">
-              <header><h3 id="quick-lights-title">Lights</h3></header>
-              <div id="quick-light-controls"><p class="empty-state">Loading household lights…</p></div>
-            </section>
-          </section>
 
         </section>
 
@@ -128,10 +120,10 @@
             </header>
 
             <section class="hvac-control" id="hvac-control" hidden>
-              <div class="hvac-reading"><span>Current Temperature</span><strong id="hvac-current-temperature" data-hvac-current>N/A</strong><small data-hvac-operation>Connecting to thermostat</small></div>
+              <div class="hvac-reading"><span>Current Temperature</span><strong id="hvac-current-temperature" data-hvac-current>—</strong><small data-hvac-operation>Connecting to thermostat</small></div>
               <div class="temperature-control" aria-label="Temperature setpoint">
                 <button type="button" id="temperature-down" data-hvac-adjust="-1" aria-label="Lower target temperature" disabled>−</button>
-                <div><span>Target Temperature</span><strong id="hvac-target-temperature" data-hvac-target>N/A</strong></div>
+                <div><span>Target Temperature</span><strong id="hvac-target-temperature" data-hvac-target>—</strong></div>
                 <button type="button" id="temperature-up" data-hvac-adjust="1" aria-label="Raise target temperature" disabled>+</button>
               </div>
               <div class="environment-snapshot" id="environment-snapshot" aria-label="Additional temperature readings"></div>
@@ -157,10 +149,10 @@
         </section>
 
         <section class="tab-panel" role="tabpanel" id="panel-systems" aria-labelledby="tab-systems" hidden>
-          <header class="page-heading"><h1>ATHENA · SYSTEMS</h1><p>One normalized view across Atlas infrastructure. Direct service ports remain behind the shell.</p></header>
+          <header class="page-heading"><h1>DAEDALUS · SYSTEMS</h1><p>One normalized view across Atlas infrastructure. Direct service ports remain behind the shell.</p></header>
           <div class="systems-summary">
             <article><span class="pulse-dot"></span><div><small>Overall State</small><strong id="systems-state">Connecting</strong></div></article>
-            <article><small>Last Observation</small><strong id="systems-observed">N/A</strong></article>
+            <article><small>Last Observation</small><strong id="systems-observed">—</strong></article>
             <article><small>Host</small><strong id="systems-host">Atlas Server</strong></article>
           </div>
           <section class="status-section"><div class="section-heading"><div><h2>Local Endpoints</h2></div></div><div class="status-list" id="service-list"><p class="empty-state">Loading service status…</p></div></section>
@@ -171,19 +163,60 @@
 
         <section class="tab-panel" role="tabpanel" id="panel-energy" aria-labelledby="tab-energy" hidden>
           <header class="page-heading"><h1>SOL · ENERGY</h1><p id="energy-observed">Live power · Tesla history</p></header>
-          <div class="metric-grid energy-full-grid">
-            <article class="metric-card"><span>Solar Production</span><strong id="energy-page-solar">N/A</strong><small id="energy-page-solar-note">Awaiting Powerwall</small></article>
-            <article class="metric-card"><span>Home Demand</span><strong id="energy-page-home">N/A</strong><small id="energy-page-home-note">Current Household Load</small></article>
-            <article class="metric-card"><span>Battery</span><strong id="energy-page-battery">N/A</strong><small id="energy-page-battery-note">State Of Charge</small></article>
-            <article class="metric-card"><span>Grid</span><strong id="energy-page-grid">N/A</strong><small id="energy-page-grid-note">Current Grid Flow</small></article>
-          </div>
-          <section class="tesla-energy" aria-label="Tesla energy history">
-            <div class="energy-view-switch" role="group" aria-label="Energy view">
-              <button type="button" data-energy-view="home" aria-pressed="false">Home</button>
-              <button type="button" data-energy-view="battery" aria-pressed="false">Powerwall</button>
-              <button type="button" data-energy-view="solar" aria-pressed="true">Solar</button>
-              <button type="button" data-energy-view="grid" aria-pressed="false">Grid</button>
+          <section class="energy-exterior" id="energy-exterior-view" aria-label="House energy overview">
+            <div class="energy-house-panel">
+              <img src="/assets/atlas-house-hilltop.png" alt="Daytime illustration of the owner's hilltop house and solar array">
+              <div class="energy-house-strip" aria-label="Current energy state">
+                <span id="energy-exterior-solar-flow">Solar: Awaiting Powerwall</span>
+                <span id="energy-exterior-battery-flow">Powerwall: Awaiting Powerwall</span>
+              </div>
             </div>
+            <aside class="energy-exterior-readings" aria-label="Current energy readings">
+              <div class="metric-grid energy-full-grid">
+                <article class="metric-card"><span>Solar</span><strong id="energy-page-solar">—</strong><small id="energy-page-solar-note">Awaiting Powerwall</small></article>
+                <article class="metric-card"><span>House Load</span><strong id="energy-page-home">—</strong><small>Includes Athena When Charging</small></article>
+                <article class="metric-card"><span>Powerwall</span><strong id="energy-page-battery">—</strong><small id="energy-page-battery-note">State Of Charge</small></article>
+                <article class="metric-card"><span>Grid</span><strong id="energy-page-grid">—</strong><small id="energy-page-grid-note">Current Grid Flow</small></article>
+              </div>
+              <section class="energy-exterior-athena" aria-label="Athena vehicle reading">
+                <div class="energy-exterior-athena-copy">
+                  <h2>Athena</h2>
+                  <div class="energy-exterior-athena-numbers"><span id="energy-exterior-athena-battery">— Battery</span><span id="energy-exterior-athena-range">— Range</span><span id="energy-exterior-athena-power">— At Last Check</span></div>
+                  <p id="energy-exterior-athena-state">Waiting For A Reading</p>
+                  <small id="energy-exterior-athena-observed">Periodic snapshot · Not live</small>
+                </div>
+                <img src="/assets/model-y.png" alt="Blue Tesla Model Y, generated vehicle artwork">
+              </section>
+              <p class="energy-exterior-caveat">House Load includes Athena when charging. A live House/Athena split is not available from this feed.</p>
+            </aside>
+          </section>
+          <h2 class="energy-history-heading">History</h2>
+          <div class="energy-layout" id="energy-detail-view">
+          <section class="tesla-energy" aria-label="Tesla Energy And Vehicle Readings">
+            <div class="energy-view-switch" role="group" aria-label="Energy view">
+              <button type="button" data-energy-view="home" aria-pressed="true">House Load</button>
+              <button type="button" data-energy-view="battery" aria-pressed="false">Powerwall</button>
+              <button type="button" data-energy-view="solar" aria-pressed="false">Solar</button>
+              <button type="button" data-energy-view="grid" aria-pressed="false">Grid</button>
+              <button type="button" data-energy-view="vehicle" aria-pressed="false">Vehicle</button>
+            </div>
+            <div id="energy-vehicle-view" hidden>
+              <section class="status-section" id="energy-athena-snapshot" hidden>
+                <div class="section-heading"><div><h2>Athena Charging</h2><p id="energy-athena-observed" aria-live="polite"></p></div></div>
+                <div class="metric-grid energy-full-grid" id="energy-athena-readings"></div>
+                <p class="independence-note" id="energy-athena-state"></p>
+              </section>
+              <p id="energy-athena-waiting" class="energy-data-status">Waiting For Athena Readings.</p>
+              <section class="athena-history" aria-label="Athena charging history">
+                <h3>Charging Records</h3>
+                <div id="athena-charging-records"></div>
+                <details class="athena-record-detail"><summary>Data &amp; Context</summary>
+                  <label class="athena-efficiency">Miles estimate basis (mi/kWh) <input id="athena-efficiency" type="number" min="0.1" max="10" step="0.1" value="3" inputmode="decimal"></label>
+                  <p class="energy-chart-note">Estimated miles = kWh × this assumed efficiency. Not measured range; charging losses are excluded.</p>
+                </details>
+              </section>
+            </div>
+            <div id="energy-history-view">
             <div class="energy-calendar-toolbar">
               <div class="energy-date-heading"><button type="button" id="energy-prev" aria-label="Previous period">‹</button><h2 id="energy-period-title">Today</h2><button type="button" id="energy-next" aria-label="Next period">›</button></div>
               <div class="energy-date-controls"><input id="energy-date" type="date" aria-label="Energy history date"><select id="energy-period" aria-label="Energy history period"><option value="day">Day</option><option value="month">Month</option><option value="year">Year</option></select><button type="button" id="energy-current">Today</button></div>
@@ -194,19 +227,23 @@
             <p class="energy-chart-note" id="energy-chart-note"></p>
             <section id="energy-charge-section" hidden><h3>Charge Level</h3><div id="energy-charge-chart" class="tesla-charge-chart"></div></section>
             <div class="energy-flow-groups" id="energy-flow-groups"></div>
-            <details class="energy-evidence"><summary>Data &amp; context <span aria-hidden="true">ⓘ</span></summary><div id="energy-data-details"></div></details>
+            <details class="energy-evidence"><summary>Data &amp; Context <span aria-hidden="true">ⓘ</span></summary><p>Home load may include vehicle charging. Vehicle separation is unavailable. Tesla controls Charge on Solar.</p><p id="energy-vehicle-connection">Checking vehicle connection...</p><div id="energy-data-details"></div></details>
+            </div>
           </section>
-          <section class="status-section energy-financials"><div class="section-heading"><div><h2>Energy Financials</h2><p class="cycle-range" id="energy-cycle-range">Billing dates unavailable</p></div><a class="embedded-app-link" id="open-utility" href="#" target="_blank" rel="noopener">Review Utility</a></div><p class="independence-note">Billing-cycle estimates · Separate from Tesla calendar totals</p><div class="metric-grid energy-financial-grid" id="energy-financial-list"><p class="empty-state">Loading financial data…</p></div><p class="independence-note" id="utility-rate-status">Utility account rates require weekly verification.</p></section>
+          <aside class="energy-sidebar" aria-label="Energy Summary And Billing">
+            <section class="status-section energy-financials"><div class="section-heading"><div><h2>Energy Financials</h2><p class="cycle-range" id="energy-cycle-range">Billing dates unavailable</p></div><a class="embedded-app-link" id="open-utility" href="#" target="_blank" rel="noopener">Review UTILITY</a></div><p class="independence-note">Billing-cycle estimates · Separate from Tesla calendar totals</p><div class="metric-grid energy-financial-grid" id="energy-financial-list"><p class="empty-state">Loading financial data…</p></div><p class="independence-note" id="utility-rate-status">UTILITY account rates require weekly verification.</p></section>
+          </aside>
+          </div>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel environment-panel" role="tabpanel" id="panel-environment" aria-labelledby="tab-environment" hidden>
           <header class="page-heading environment-heading"><div><h1>AEOLUS · ENVIRONMENT</h1><p>Weather outside. Comfort and air quality inside.</p></div><span class="independence-note" id="environment-observed">Local Data</span></header>
           <section class="hvac-inline" aria-labelledby="environment-hvac-title">
             <header><h2 id="environment-hvac-title">HVAC</h2><p data-hvac-operation>Connecting to thermostat</p></header>
-            <div class="hvac-inline-reading"><span>Current</span><strong data-hvac-current>N/A</strong></div>
+            <div class="hvac-inline-reading"><span>Current</span><strong data-hvac-current>—</strong></div>
             <div class="hvac-inline-setpoint" role="group" aria-label="Environment target temperature">
               <button type="button" data-hvac-adjust="-1" aria-label="Lower target temperature" disabled>−</button>
-              <div><span>Target</span><strong data-hvac-target>N/A</strong></div>
+              <div><span>Target</span><strong data-hvac-target>—</strong></div>
               <button type="button" data-hvac-adjust="1" aria-label="Raise target temperature" disabled>+</button>
             </div>
             <button class="hvac-inline-apply" type="button" data-hvac-apply disabled>Apply Temperature</button>
@@ -214,19 +251,19 @@
           </section>
           <section class="weather-command" aria-labelledby="outdoor-weather-title">
             <div class="section-heading weather-command-heading">
-              <div><h2 id="outdoor-weather-title">Weather Command</h2><p id="weather-location">Configure your region</p></div>
+              <div><h2 id="outdoor-weather-title">Weather Command</h2><p id="weather-location">Copperas Cove, TX</p></div>
               <a class="embedded-app-link" id="open-radar" href="https://radar.weather.gov/?vm=r" target="_blank" rel="noopener">Open Interactive Radar <span aria-hidden="true">↗</span></a>
             </div>
             <div class="weather-alert-list" id="weather-alert-list" hidden></div>
             <div class="weather-overview-grid">
               <article class="weather-now-card">
-                <div class="weather-now-primary"><span class="weather-now-icon" id="weather-now-icon" aria-hidden="true">☼</span><div><strong id="weather-now-temp">N/A</strong><h3 id="weather-now-condition">Loading Weather…</h3><p id="weather-now-feels">Feels Like ;</p></div></div>
+                <div class="weather-now-primary"><span class="weather-now-icon" id="weather-now-icon" aria-hidden="true">☼</span><div><strong id="weather-now-temp">—</strong><h3 id="weather-now-condition">Loading Weather…</h3><p id="weather-now-feels">Feels Like —</p></div></div>
                 <div class="weather-fact-grid" id="weather-fact-grid"><p class="empty-state">Loading Current Conditions…</p></div>
               </article>
               <article class="weather-radar-card">
-                <div><h3>Live Radar</h3><span>Regional radar · Not configured</span></div>
+                <div><h3>Live Radar</h3><span>NWS KGRK · Auto-Playing</span></div>
                 <a class="weather-radar-link" href="https://radar.weather.gov/?vm=r" target="_blank" rel="noopener" aria-label="Open The Full Interactive National Weather Service Radar">
-                  <p id="weather-radar-unconfigured">Configure a regional radar source for your installation.</p>
+                  <img id="weather-radar-image" alt="Configure a regional weather radar source">
                   <span>Open Full Interactive Radar <b aria-hidden="true">↗</b></span>
                 </a>
               </article>
@@ -243,8 +280,8 @@
         </section>
         <section class="tab-panel security-panel" role="tabpanel" id="panel-security" aria-labelledby="tab-security" hidden>
           <header class="page-heading security-heading"><div><h1>TITAN · SECURITY</h1><p>Physical awareness first, with Atlas cyber health and a separate vacation-only secondary IDS.</p></div><span class="independence-note">Primary monitored alarm remains standalone</span></header>
-          <section class="ids-panel" id="ids-panel"><div class="ids-copy"><h2 id="ids-state">Vacation IDS · Checking Coverage</h2><p id="ids-detail">Reading configured motion sensors…</p><div class="ids-sensors" id="ids-sensors"></div></div><div class="ids-control"><span id="ids-mode">Disarmed</span><button type="button" id="ids-arm" hidden>Arm Vacation IDS</button><button type="button" id="ids-confirm" hidden>Confirm Arm</button><button type="button" id="ids-cancel" hidden>Cancel</button><p id="ids-control-status" aria-live="polite"></p></div></section>
-          <section class="status-section cyber-section"><div class="section-heading"><div><h2>Atlas PC · Cyber Health</h2></div><span class="independence-note" id="security-server-summary">Awaiting Collector</span></div><div class="security-gauge-grid" id="security-gauge-grid"></div><div class="status-list compact" id="security-control-list"></div><h3>Detection Review</h3><div class="status-list compact" id="cyber-finding-list"></div><details class="cyber-method"><summary>Coverage &amp; Method</summary><p id="cyber-coverage-note"></p><p>Checks every five minutes. Events are grouped, not counted as confirmed attacks. Only selected detection rules are covered; this is not a full security audit. Command lines and raw event messages stay out of Atlas. The planned UniFi example is separate from these endpoint checks. No network assessment has been performed.</p><a class="embedded-app-link" id="open-sysmon" href="#" target="_blank" rel="noopener">Historical Grafana Charts</a></details></section>
+          <section class="ids-panel" id="ids-panel"><div class="ids-copy"><h2 id="ids-state">Vacation IDS · Checking Coverage</h2><p id="ids-detail">Reading Echo ultrasonic motion sensors…</p><div class="ids-sensors" id="ids-sensors"></div></div><div class="ids-control"><span id="ids-mode">Disarmed</span><button type="button" id="ids-arm" hidden>Arm Vacation IDS</button><button type="button" id="ids-confirm" hidden>Confirm Arm</button><button type="button" id="ids-cancel" hidden>Cancel</button><p id="ids-control-status" aria-live="polite"></p></div></section>
+          <section class="status-section cyber-section"><div class="section-heading"><div><h2>Atlas PC · Cyber Health</h2></div><span class="independence-note" id="security-server-summary">Awaiting Collector</span></div><div class="security-gauge-grid" id="security-gauge-grid"></div><div class="status-list compact" id="security-control-list"></div><h3>Detection Review</h3><div class="status-list compact" id="cyber-finding-list"></div><details class="cyber-method"><summary>Coverage &amp; Method</summary><p id="cyber-coverage-note"></p><p>Checks every five minutes. Events are grouped, not counted as confirmed attacks. Only selected detection rules are covered; this is not a full security audit. Command lines and raw event messages stay out of Atlas. Network assessment is deferred until UniFi.</p><a class="embedded-app-link" id="open-sysmon" href="#" target="_blank" rel="noopener">Historical Grafana Charts</a></details></section>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel pantry-panel" role="tabpanel" id="panel-pantry" aria-labelledby="tab-pantry" hidden>
@@ -253,10 +290,10 @@
             <a class="embedded-app-link" data-galleyquest-tab="stock" href="#pantry">Pantry Overview</a>
           </header>
           <div class="pantry-metric-grid" aria-label="Pantry status">
-            <a data-galleyquest-tab="grocery" href="#" target="_blank" rel="noopener"><span>Ingredients Missing</span><strong id="pantry-missing-count">N/A</strong><small>For Planned Meals Only</small></a>
-            <a data-galleyquest-tab="grocery" href="#" target="_blank" rel="noopener"><span>Items In Cart</span><strong id="pantry-cart-count">N/A</strong><small id="pantry-cart-note">Current Grocery List</small></a>
-            <a data-galleyquest-tab="plan" href="#" target="_blank" rel="noopener"><span>Meals Planned</span><strong id="pantry-meal-count">N/A</strong><small>This Week</small></a>
-            <a data-galleyquest-tab="stock" href="#" target="_blank" rel="noopener"><span>Staples On Hand</span><strong id="pantry-staple-count">N/A</strong><small id="pantry-staple-note">Household Basics</small></a>
+            <a data-galleyquest-tab="grocery" href="#" target="_blank" rel="noopener"><span>Ingredients Missing</span><strong id="pantry-missing-count">—</strong><small>For Planned Meals Only</small></a>
+            <a data-galleyquest-tab="grocery" href="#" target="_blank" rel="noopener"><span>Items In Cart</span><strong id="pantry-cart-count">—</strong><small id="pantry-cart-note">Current Grocery List</small></a>
+            <a data-galleyquest-tab="plan" href="#" target="_blank" rel="noopener"><span>Meals Planned</span><strong id="pantry-meal-count">—</strong><small>This Week</small></a>
+            <a data-galleyquest-tab="stock" href="#" target="_blank" rel="noopener"><span>Staples On Hand</span><strong id="pantry-staple-count">—</strong><small id="pantry-staple-note">Household Basics</small></a>
           </div>
           <div class="pantry-workspace-grid">
             <section class="pantry-board pantry-meals">
@@ -288,10 +325,10 @@
               <div class="travel-trip-list" id="travel-trip-list"><p class="empty-state">Loading planned travel…</p></div>
             </section>
             <section class="travel-summary-grid" aria-label="Upcoming travel summary">
-              <article><span>Upcoming Trips</span><strong id="travel-upcoming-count">N/A</strong><small>Planned Itineraries</small></article>
-              <article><span>Bookings Complete</span><strong id="travel-ready-count">N/A</strong><small>Departure Checks Are Separate</small></article>
-              <article><span>Already Charged</span><strong id="travel-charged-total">N/A</strong><small>Posted Or Paid</small></article>
-              <article><span>Due Later</span><strong id="travel-later-total">N/A</strong><small>Estimated Through Trip End</small></article>
+              <article><span>Upcoming Trips</span><strong id="travel-upcoming-count">—</strong><small>Planned Itineraries</small></article>
+              <article><span>Bookings Complete</span><strong id="travel-ready-count">—</strong><small>Departure Checks Are Separate</small></article>
+              <article><span>Already Charged</span><strong id="travel-charged-total">—</strong><small>Posted Or Paid</small></article>
+              <article><span>Due Later</span><strong id="travel-later-total">—</strong><small>Estimated Through Trip End</small></article>
             </section>
             <section class="travel-board"><header><div><h2>Needs Attention</h2></div></header><div class="travel-operations-list" id="travel-attention-list"></div></section>
             <section class="travel-board"><header><div><h2>Past Trips And Cases</h2></div></header><div class="travel-operations-list" id="travel-past-list"></div><div class="travel-operations-list" id="travel-case-list"></div></section>
@@ -303,7 +340,7 @@
             <section class="travel-guardrails" aria-label="Travel booking rules">
               <article><span>01</span><div><strong>Research Together</strong><small>Atlas compares the signed-in rates, terms, schedules, and benefits you authorize it to review.</small></div></article>
               <article><span>02</span><div><strong>Approve Before Purchase</strong><small>No flight, hotel, car, or other paid booking is completed without your explicit confirmation.</small></div></article>
-              <article><span>03</span><div><strong>Keep Credentials Out</strong><small>Account passwords stay in the browser or Windows credential storage;not in the trip ledger.</small></div></article>
+              <article><span>03</span><div><strong>Keep Credentials Out</strong><small>Account passwords stay in the browser or Windows credential storage—not in the trip ledger.</small></div></article>
             </section>
             </details>
           </div>
@@ -311,10 +348,10 @@
             <button class="travel-back" type="button" id="travel-back">← All Trips</button>
             <header><div><h2 id="travel-detail-title">Trip</h2><p id="travel-detail-meta"></p></div><div class="travel-detail-status"><span class="travel-type-pill" id="travel-detail-type">Unclassified</span><span class="travel-readiness" id="travel-detail-readiness">Checking</span></div></header>
             <section class="travel-detail-summary">
-              <article><span>Verified</span><strong id="travel-detail-verified">N/A</strong><small>Required Arrangements</small></article>
-              <article><span>Paid</span><strong id="travel-detail-charged">N/A</strong><small id="travel-detail-charged-note">Before Departure</small><span id="travel-cost-help"></span></article>
-              <article><span>Due Later</span><strong id="travel-detail-later">N/A</strong><small>Estimate</small></article>
-              <article><span>Payment Card</span><strong id="travel-detail-card">N/A</strong><small>Payment · Not Coverage</small></article>
+              <article><span>Verified</span><strong id="travel-detail-verified">—</strong><small>Required Arrangements</small></article>
+              <article><span>Paid</span><strong id="travel-detail-charged">—</strong><small id="travel-detail-charged-note">Before Departure</small><span id="travel-cost-help"></span></article>
+              <article><span>Due Later</span><strong id="travel-detail-later">—</strong><small>Estimate</small></article>
+              <article><span>Payment Card</span><strong id="travel-detail-card">—</strong><small>Payment · Not Coverage</small></article>
             </section>
             <div class="travel-detail-grid">
               <section class="travel-board"><header><h2>Ready To Go?</h2></header><div class="travel-operations-list" id="travel-departure-list"></div><button type="button" class="travel-review-button" id="travel-review-open">Review &amp; Confirm</button></section>
@@ -324,9 +361,10 @@
               <header><div><h2>Expense Report</h2></div><span class="travel-expense-status" id="travel-expense-status">Not Applicable</span></header>
               <p class="travel-expense-personal" id="travel-expense-personal">Personal trip · reimbursement tracking is not required.</p>
               <div class="travel-expense-grid" id="travel-expense-grid" hidden>
-                <article><span>Submitted</span><strong id="travel-expense-submitted">N/A</strong><small>Yes, No, Or Partial</small></article>
-                <article><span>Reimbursed</span><strong id="travel-expense-reimbursed">N/A</strong><small>Received So Far</small></article>
-                <article><span>Remaining</span><strong id="travel-expense-remaining">N/A</strong><small>Still Outstanding</small></article>
+                <article><span>Submitted</span><strong id="travel-expense-submitted">—</strong><small>Yes, No, Or Partial</small></article>
+                <article><span>Reimbursed</span><strong id="travel-expense-reimbursed">—</strong><small>Received So Far</small></article>
+                <article><span>Remaining</span><strong id="travel-expense-remaining">—</strong><small>Recorded Reimbursement Only</small></article>
+                <article id="travel-per-diem-card" hidden><span>Per Diem</span><strong id="travel-per-diem-total"></strong><small id="travel-per-diem-detail"></small></article>
               </div>
               <p class="travel-expense-notes" id="travel-expense-notes"></p>
             </section>
@@ -338,21 +376,26 @@
             <details class="travel-notes" id="travel-notes" hidden><summary>Trip Notes</summary><p id="travel-notes-copy"></p></details>
           </article>
           <dialog class="travel-dialog" id="travel-info-dialog" aria-labelledby="travel-info-title"><header><h2 id="travel-info-title">Details</h2><button type="button" id="travel-info-close" aria-label="Close Details">×</button></header><div id="travel-info-body"></div></dialog>
-          <dialog class="travel-dialog" id="travel-review-dialog" aria-labelledby="travel-review-title"><header><h2 id="travel-review-title">Review Trip</h2><button type="button" id="travel-review-close" aria-label="Close Review">×</button></header><p id="travel-review-route"></p><div id="travel-review-checklist"></div><p class="review-disclaimer">Your confirmation only. Bookings and insurance are not changed.</p><p id="travel-review-result" role="status"></p><button type="button" class="travel-review-button" id="travel-review-save">Confirm · Good To Go</button></dialog>
+          <dialog class="travel-dialog" id="travel-review-dialog" aria-labelledby="travel-review-title"><header><h2 id="travel-review-title">Review Trip</h2><button type="button" id="travel-review-close" aria-label="Close Review">×</button></header><p id="travel-review-route"></p><div id="travel-review-checklist"></div><p class="review-disclaimer">Your confirmation only. Bookings and insurance are not changed.</p><p id="travel-review-result" role="status"></p><button type="button" class="travel-review-button" id="travel-review-save">Confirm — Good To Go</button></dialog>
           <article class="travel-loyalty-view" id="travel-loyalty-view" hidden>
             <button class="travel-back" type="button" id="travel-loyalty-back">← Travel Overview</button>
             <header class="travel-loyalty-header"><div><h2>Travel Rewards</h2><p>Balances remain separate by program; Atlas never invents a combined points total.</p></div><span id="travel-loyalty-observed">Awaiting Account Review</span></header>
             <section class="travel-summary-grid travel-loyalty-summary" aria-label="Loyalty summary">
-              <article><span>Programs Tracked</span><strong id="loyalty-program-count">N/A</strong><small>Illustrative Travel Accounts</small></article>
-              <article><span>United Club Passes</span><strong id="loyalty-lounge-pass-count">N/A</strong><small>Illustrative Passes Remaining</small></article>
-              <article><span>Status Examples</span><strong id="loyalty-status-count">N/A</strong><small>Not Account-Verified</small></article>
-              <article><span>Progress Tracked</span><strong id="loyalty-progress-count">N/A</strong><small>Qualification Paths</small></article>
+              <article><span>Programs Tracked</span><strong id="loyalty-program-count">—</strong><small>Signed-In Travel Accounts</small></article>
+              <article><span>Lounge Passes</span><strong id="loyalty-lounge-pass-count">—</strong><small>Recorded Passes Remaining</small></article>
+              <article><span>Status Verified</span><strong id="loyalty-status-count">—</strong><small>Current Membership Tiers</small></article>
+              <article><span>Progress Tracked</span><strong id="loyalty-progress-count">—</strong><small>Qualification Paths</small></article>
             </section>
             <section class="travel-board">
               <header><div><h2>Balances And Qualification</h2></div><span>Member IDs Are Masked</span></header>
               <div class="travel-loyalty-list" id="travel-loyalty-list"><p class="empty-state">Loading loyalty programs…</p></div>
             </section>
           </article>
+          <button class="text-button" type="button" data-tab-target="home">Return Home</button>
+        </section>
+        <section class="tab-panel argo-panel" role="tabpanel" id="panel-argo" aria-labelledby="tab-argo" hidden>
+          <header class="page-heading"><h1>ARGO · VEHICLES</h1><p>Local vehicle profiles and service records, separate from telemetry.</p></header>
+          <a class="primary-button" href="/argo/">Open Household Vehicles</a>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel" role="tabpanel" id="panel-maintenance" aria-labelledby="tab-maintenance" hidden>
@@ -382,7 +425,7 @@
         <section class="tab-panel household-panel" role="tabpanel" id="panel-notifications" aria-labelledby="tab-notifications" hidden><header class="page-heading"><h1>Notifications</h1><p>Private messages remain on Atlas. Active system conditions stay visible until resolved.</p></header><div class="household-layout"><section class="household-compose"><h2>Send A Message</h2><label>To<select id="message-recipient"><option value="household">Household</option><option value="sam">Sam</option><option value="alex">Alex</option></select></label><label>Message<textarea id="message-body" maxlength="1000" rows="4" placeholder="Write a local household message"></textarea></label><button class="control-primary" type="button" id="send-message">Send Locally</button><p class="control-status" id="message-status" aria-live="polite"></p></section><section class="household-inbox"><h2>Inbox</h2><div id="system-notice-list"></div><div id="household-message-list"><p class="empty-state">Loading notifications…</p></div></section></div><button class="text-button" type="button" data-tab-target="home">Return Home</button></section>
       </main>
     </div>
-    <button class="atlas-chat-launcher" id="atlas-chat-launcher" type="button" aria-label="Chat with Atlas through local Hermes" aria-controls="atlas-chat-dialog" aria-expanded="false"><img src="/assets/greek/atlas.svg" alt="" width="64" height="64"></button>
+    <button class="atlas-chat-launcher" id="atlas-chat-launcher" type="button" aria-label="Chat with Atlas through local Hermes" aria-controls="atlas-chat-dialog" aria-expanded="false"><img src="/assets/greek/atlas.svg?v=20260913-chat" alt="" width="64" height="64"></button>
     <dialog class="atlas-chat-dialog" id="atlas-chat-dialog" aria-labelledby="atlas-chat-title">
       <header class="atlas-chat-header"><div><strong id="atlas-chat-title">Atlas</strong><small>Powered by local Hermes</small></div><button id="atlas-chat-close" type="button" aria-label="Close Atlas chat">×</button></header>
       <div id="atlas-chat-body"></div>

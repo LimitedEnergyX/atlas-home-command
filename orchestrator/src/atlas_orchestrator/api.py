@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from .core import AtlasOrchestrator
+from .calendar_view import read_calendar
 
 
 REQUEST_PATH = re.compile(r"^/v1/requests/([^/]+)$")
@@ -24,6 +25,18 @@ STATIC_ROUTES = {
     "/assets/atlas.css": WEB_ROOT / "atlas.css",
     "/assets/atlas.js": WEB_ROOT / "atlas.js",
     "/assets/energy-ui.js": WEB_ROOT / "energy-ui.js",
+    "/assets/calendar-ui.js": WEB_ROOT / "calendar-ui.js",
+    "/assets/energy-house.svg": WEB_ROOT / "energy-house.svg",
+    "/assets/vehicle-example.svg": WEB_ROOT / "vehicle-example.svg",
+    "/assets/atlas-house-hilltop.png": WEB_ROOT / "atlas-house-hilltop.png",
+    "/assets/model-y.png": WEB_ROOT / "model-y.png",
+    "/assets/pickup.png": WEB_ROOT / "pickup.png",
+    "/assets/motorcycle.png": WEB_ROOT / "motorcycle.png",
+    "/assets/icons/vehicles.svg": WEB_ROOT / "icons" / "vehicles.svg",
+    "/assets/greek/argo.svg": WEB_ROOT / "greek" / "argo.svg",
+    "/assets/greek/daedalus.svg": WEB_ROOT / "greek" / "daedalus.svg",
+    "/argo/": WEB_ROOT / "argo" / "vehicle.html",
+    "/argo/vehicle.html": WEB_ROOT / "argo" / "vehicle.html",
     "/assets/maintenance-ui.js": WEB_ROOT / "maintenance-ui.js",
     "/assets/openai.svg": WEB_ROOT / "openai.svg",
     "/assets/atlas-home-overall.png": WEB_ROOT / "heroes" / "atlas-home-desktop.png",
@@ -33,6 +46,10 @@ STATIC_ROUTES = {
     "/assets/heroes/atlas-home-tablet.png": WEB_ROOT / "heroes" / "atlas-home-desktop.png",
     "/assets/heroes/atlas-home-mobile.png": WEB_ROOT / "heroes" / "atlas-home-desktop.png",
 }
+
+# Explicit assets only. Never serve owner documents or arbitrary directories.
+for relative in ("assets/css/site.css", "assets/css/fleet.css", "assets/js/vehicle.js", "assets/js/fleet-shell.js"):
+    STATIC_ROUTES[f"/argo/{relative}"] = WEB_ROOT / "argo" / relative
 
 for icon_name in (
     "home",
@@ -288,6 +305,12 @@ class AtlasHandler(BaseHTTPRequestHandler):
                 return
             if request_path == "/v1/energy/history":
                 self._send(HTTPStatus.OK, self.server.orchestrator.energy_history(query.get("range", ["day"])[0]))
+                return
+            if request_path == "/v1/calendar":
+                self._send(HTTPStatus.OK, read_calendar(self.server.orchestrator.settings.data_dir / "calendar.json"))
+                return
+            if request_path == "/v1/argo":
+                self._send(HTTPStatus.OK, self.server.orchestrator.argo_status())
                 return
             if request_path == "/v1/energy/calendar":
                 self._send(HTTPStatus.OK, self.server.orchestrator.energy_calendar(query.get("period", ["day"])[0], query.get("date", [""])[0]))

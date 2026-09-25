@@ -362,5 +362,6 @@ class TravelTarget:
                 "remaining_amount": round(remaining_amount, 2),
                 "currency": str(raw_expenses.get("currency") or "USD").strip().upper(),
                 "notes": str(raw_expenses.get("notes") or "").strip(),
+                "per_diem": raw_expenses.get("per_diem") if isinstance(raw_expenses.get("per_diem"), dict) else None,
             },
         }

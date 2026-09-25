@@ -3,6 +3,11 @@
 .topbar { top: var(--demo-banner-height); }
 .module-rail { top: calc(var(--header) + var(--demo-banner-height)); }
 .workspace, body.home-active .workspace { padding-top: calc(var(--header) + var(--demo-banner-height) + 26px); }
+.workspace:has(#panel-energy:not([hidden])) { padding-top: calc(var(--header) + var(--demo-banner-height) + 16px); }
+body .fleet-topbar { top: var(--demo-banner-height); }
+body .fleet-subnav { top: calc(64px + var(--demo-banner-height)); }
+body .fleet-overview { margin-top: calc(112px + var(--demo-banner-height)); }
+@media (min-width:701px) { body .fleet-site-rail { top: calc(64px + var(--demo-banner-height)); } }
 @media (max-width: 700px) {
   :root { --demo-banner-height: 52px; }
   .module-rail { top: auto; }

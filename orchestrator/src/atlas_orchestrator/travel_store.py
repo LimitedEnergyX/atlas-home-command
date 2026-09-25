@@ -16,7 +16,7 @@ from pathlib import Path
 
 COLLECTIONS = {"trips": "id", "loyalty": "id", "sources": "provider", "cases": "id", "monitor": "id"}
 FIELDS = {
-    "trips": "id title trip_type destination start_date end_date travelers purpose notes reservations charges business_expenses departure_checks coverage evidence verified_at operator_review",
+    "trips": "id title trip_type destination start_date end_date travelers purpose notes preferred_card reservations charges business_expenses departure_checks coverage evidence verified_at operator_review",
     "loyalty": "id program provider balance balance_label balance_unit balance_verified lounge_visits_remaining lounge_visits_verified_at status member_id_masked member_since qualification benefits verified_at notes evidence",
     "sources": "provider status bookings_found detail verified_at session_status session_checked_at evidence",
     "cases": "id trip_id title provider reference status owner next_action deadline deadline_kind notes amount currency verified_at evidence",
@@ -128,8 +128,10 @@ def validate_record(collection, record):
                 if not check.get("evidence"):
                     raise ValueError("Verified checks require evidence")
         for coverage in record.get("coverage", []):
-            if coverage.get("status") not in {"verified", "unverified", "pending", "denied", "not-applicable"}:
+            if coverage.get("status") not in {"verified", "reported", "unverified", "pending", "denied", "not-applicable"}:
                 raise ValueError("Invalid coverage status")
+            if coverage["status"] == "reported" and not coverage.get("evidence"):
+                raise ValueError("Reported coverage requires owner evidence")
             if coverage["status"] == "verified":
                 timestamp(coverage.get("verified_at"), "coverage verified_at")
                 if not all(coverage.get(k) for k in ("effective_from", "effective_to", "evidence", "scope")):

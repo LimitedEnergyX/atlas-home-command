@@ -1,55 +1,35 @@
-// Runs responsive DOM placement and orientation only. No household API calls.
-const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:assert/strict');
-const source = fs.readFileSync(require('node:path').join(__dirname,'../src/atlas_orchestrator/web/atlas.js'),'utf8');
-
-function checkLayout(initialWidth) {
-  const queries = new Map();
-  const stage = {children:[]}, panel = {children:[]};
-  const rail = {attributes:{},setAttribute(name,value){this.attributes[name]=value;}};
-  const setpoint = {value:72,focusCalls:0,focus(options){this.focusCalls++;assert.equal(options.preventScroll,true);}};
-  const hvac = {parentElement:panel,contains(node){return node===setpoint;}};
-  function anchor(parentElement) {
-    return {parentElement,before(node){
-      node.parentElement.children.splice(node.parentElement.children.indexOf(node),1);
-      this.parentElement.children.splice(this.parentElement.children.indexOf(this),0,node);
-      node.parentElement=this.parentElement;
-    }};
-  }
-  const grid=anchor(stage), preview=anchor(panel);
-  stage.children=[grid]; panel.children=[stage,hvac,preview];
-  const context={document:{
-    activeElement:null,
-    querySelector(selector){return selector==='.module-rail'?rail:grid;},
-    getElementById(id){return id==='home-hvac'?hvac:preview;},
-  },window:{matchMedia(query){
-    const media={matches:initialWidth<=Number(query.match(/\d+/)[0]),listeners:[],addEventListener(type,handler){assert.equal(type,'change');this.listeners.push(handler);}};
-    queries.set(query,media);return media;
-  }}};
+// Home controls stay in document order; only the module rail orientation changes.
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../src/atlas_orchestrator/web/atlas.js'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'../src/atlas_orchestrator/web/index.html'),'utf8');
+const home=html.slice(html.indexOf('id="panel-home"'),html.indexOf('<section class="control-overlay"'));
+assert(home.indexOf('class="home-module-grid"') < home.indexOf('id="home-hvac"'));
+assert(!home.includes('home-preview'));
+assert.equal((home.match(/id="home-hvac"/g)||[]).length,1);
+assert(!home.slice(home.indexOf('data-hvac-status')).includes('<section'),'HVAC must be the last Home section');
+for(const initialWidth of [320,1280]){
+  const queries=new Map();
+  const rail={setAttribute(name,value){this[name]=value;}};
+  const context={document:{querySelector(selector){assert.equal(selector,'.module-rail');return rail;}},
+    window:{matchMedia(query){const media={matches:initialWidth<=700,listeners:[],addEventListener(type,fn){this.listeners.push(fn);}};queries.set(query,media);return media;}}};
   vm.createContext(context);
   const start=source.indexOf('function setupResponsiveLayout()');
-  const end=source.indexOf('\nfunction activateTab(',start);
-  vm.runInContext(source.slice(start,end),context);
-  const verify=width=>{
-    assert.equal(rail.attributes['aria-orientation'],width<=700?'horizontal':'vertical');
-    const before=width<=820?grid:preview;
-    assert.equal(hvac.parentElement,before.parentElement);
-    assert.equal(before.parentElement.children.indexOf(hvac)+1,before.parentElement.children.indexOf(before));
-    assert.equal([...stage.children,...panel.children].filter(node=>node===hvac).length,1,'move controls without duplicating');
-    assert.equal(setpoint.value,72,'preserve existing control state');
-  };
-  verify(initialWidth);
-  for (const width of [320,428,700,701,820,821,1280,360,1280]) {
-    context.document.activeElement=setpoint;
-    const previousParent=hvac.parentElement;
-    const previousFocusCalls=setpoint.focusCalls;
-    for (const [query,media] of queries) {
-      const matches=width<=Number(query.match(/\d+/)[0]);
-      if(matches!==media.matches){media.matches=matches;media.listeners.forEach(handler=>handler());}
-    }
-    verify(width);
-    assert.equal(setpoint.focusCalls-previousFocusCalls,previousParent===hvac.parentElement?0:1);
+  vm.runInContext(source.slice(start,source.indexOf('\nfunction activateTab(',start)),context);
+  assert.equal(rail['aria-orientation'],initialWidth<=700?'horizontal':'vertical');
+  for(const width of [320,700,701,820,1280]){
+    for(const media of queries.values()){media.matches=width<=700;media.listeners.forEach(fn=>fn());}
+    assert.equal(rail['aria-orientation'],width<=700?'horizontal':'vertical');
   }
 }
-checkLayout(1280);
-checkLayout(320);
-console.log('Responsive layout: initial mobile/desktop, 700/820 boundaries, same-node placement, state, and focus preservation passed.');
+const css=fs.readFileSync(path.join(__dirname,'../src/atlas_orchestrator/web/atlas.css'),'utf8');
+const fleetCss=fs.readFileSync(path.join(__dirname,'../src/atlas_orchestrator/web/argo/assets/css/fleet.css'),'utf8');
+assert(css.includes('@media (min-width: 1024px) {\n  body { zoom: .8; }'));
+assert(css.includes('height: calc(var(--agent-viewport-height, 100dvh) / .8)'));
+assert(!fleetCss.includes('zoom:'),'Argo must remain at full size');
+const energy=html.slice(html.indexOf('id="panel-energy"'),html.indexOf('id="panel-environment"'));
+assert(energy.indexOf('id="energy-history-chart"')<energy.indexOf('class="energy-sidebar"'));
+for(const id of ['energy-history-chart','energy-page-solar','energy-page-home','energy-page-battery','energy-page-grid','energy-financial-list']){
+  assert.equal((energy.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
+}
+console.log('Responsive layout: Home ends at HVAC, desktop Atlas uses 80% density, Argo stays unscaled, and Sol has one chart with a summary sidebar.');

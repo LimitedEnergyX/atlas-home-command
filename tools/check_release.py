@@ -10,6 +10,12 @@ APPROVED_RASTERS = {"orchestrator/src/atlas_orchestrator/web/heroes/atlas-home-d
     f"orchestrator/src/atlas_orchestrator/web/greek/{name}.png"
     for name in ("vesta", "sol", "aeolus", "titan", "demeter", "oracle", "vulcan", "athena", "olympus")
 }
+# Individually reviewed September 25 assets. The owner explicitly approved the
+# existing house illustration; the vehicle and simulated radar images are generated.
+APPROVED_RASTERS |= {
+    f"orchestrator/src/atlas_orchestrator/web/{name}.png"
+    for name in ("atlas-house-hilltop", "model-y", "pickup", "motorcycle", "dallas-radar-demo")
+}
 PATTERNS = {
     "private key": r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
     "provider credential": r"\b(?:sk-proj-|sk-ant-|ghp_|github_pat_)[A-Za-z0-9_-]{30,}",

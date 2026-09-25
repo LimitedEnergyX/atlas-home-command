@@ -54,6 +54,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('data-tab="pantry"', page)
         self.assertIn('data-tab="environment"', page)
         self.assertIn('id="panel-environment"', page)
+        self.assertIn('id="panel-argo"', page)
         self.assertNotIn("http://", page)
         self.assertEqual(page.count("https://"), 2)
         self.assertEqual(page.count("https://radar.weather.gov/"), 2)
@@ -84,14 +85,14 @@ class ShellTests(unittest.TestCase):
         _, desktop_headers, desktop = self.get("/assets/heroes/atlas-home-desktop.png")
         _, mobile_headers, mobile = self.get("/assets/heroes/atlas-home-mobile.png")
         _, icon_headers, icon = self.get("/assets/icons/environment-weather.svg")
-        _, sol_headers, sol = self.get("/assets/greek/sol.svg")
+        _, sol_headers, sol = self.get("/assets/greek/sol.png")
         self.assertEqual(desktop_headers.get_content_type(), "image/png")
         self.assertEqual(mobile_headers.get_content_type(), "image/png")
         self.assertEqual(icon_headers.get_content_type(), "image/svg+xml")
-        self.assertEqual(sol_headers.get_content_type(), "image/svg+xml")
-        self.assertTrue(desktop.startswith(b"\x89PNG\r\n\x1a\n"))
+        self.assertEqual(sol_headers.get_content_type(), "image/png")
+        self.assertGreater(len(desktop), 1_000_000)
         self.assertGreater(len(mobile), 500_000)
-        self.assertIn(b"<svg", sol)
+        self.assertGreater(len(sol), 800_000)
         self.assertIn(b"currentColor", icon)
 
     def test_shell_keeps_profile_access_without_redundant_identity_copy(self):
@@ -114,15 +115,15 @@ class ShellTests(unittest.TestCase):
         self.assertIn('/v1/household/profile/switch', source)
         self.assertIn('document.body.dataset.profile = profile.id;', source)
         self.assertIn('body[data-profile="sam"] .home-artwork { width: 100%; }', stylesheet)
-        self.assertIn('data-alex-home', page)
+        self.assertNotIn('data-alex-home', page)
 
-    def test_home_exposes_live_quick_light_controls(self):
+    def test_home_removes_quick_light_preview_without_removing_control_api(self):
         _, _, body = self.get("/")
         _, _, javascript = self.get("/assets/atlas.js")
         page = body.decode("utf-8")
         source = javascript.decode("utf-8")
         self.assertIn('id="quick-light-controls"', page)
-        self.assertIn('<h3 id="quick-lights-title">Lights</h3>', page)
+        self.assertNotIn('<h3 id="quick-lights-title">Lights</h3>', page)
         self.assertIn('function renderQuickLights()', source)
         self.assertIn('"light.main_hall_light"', source)
         self.assertIn('"light.entry_light_left"', source)
@@ -146,16 +147,22 @@ class ShellTests(unittest.TestCase):
         _, _, body = self.get("/")
         page = body.decode("utf-8")
         self.assertIn('class="home-canvas"', page)
-        self.assertIn('id="home-preview"', page)
-        self.assertIn('id="open-preview"', page)
+        self.assertNotIn('id="home-preview"', page)
+        self.assertNotIn('id="open-preview"', page)
+        home = page.split('id="panel-home"', 1)[1].split('id="home-control-overlay"', 1)[0]
+        self.assertIn('id="home-hvac"', home)
+        self.assertIn('quick-light-controls', home)
         self.assertNotIn("Household highlights", page)
         self.assertNotIn("Select a module", page)
-        for module in ("energy", "environment", "security", "pantry", "travel", "maintenance", "systems", "agents"):
+        for module in ("energy", "environment", "security", "pantry", "travel", "argo", "maintenance", "systems"):
             self.assertIn(f'data-tab-target="{module}"', page)
         self.assertIn('class="home-module-grid"', page)
         stylesheet = self.get("/assets/atlas.css")[2].decode("utf-8")
-        self.assertIn('.home-module-grid .greek-association img { display: block; width: 2.5rem; height: 2.5rem;', stylesheet)
-        self.assertIn('grid-template-columns: minmax(0, 1fr); grid-template-rows: 2.5rem auto;', stylesheet)
+        tiles = page.split('class="home-module-grid"', 1)[1].split('</nav>', 1)[0]
+        self.assertEqual(tiles.count('class="greek-association"'), 9)
+        self.assertNotIn('class="nav-icon ', tiles)
+        self.assertIn('width: clamp(3.5rem, 30cqw, 7rem)', stylesheet)
+        self.assertIn('.home-module-grid button > .nav-icon { display: none; }', stylesheet)
         self.assertNotIn('/assets/heroes/atlas-home-standard.png', page)
         self.assertNotIn('/assets/heroes/atlas-home-mobile.png', page)
         self.assertIn('/assets/heroes/atlas-home-desktop.png', page)
@@ -190,7 +197,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('requestSubmit()', source)
         self.assertIn('mode: "auto"', source)
         self.assertIn('No cloud spend', page)
-        self.assertIn('trigger.dataset.tabTarget === "agents"', source)
+        self.assertIn('trigger.addEventListener("click", () => activateTab(trigger.dataset.tabTarget, true))', source)
 
     def test_camera_surfaces_are_removed_while_ring_is_isolated(self):
         page = self.get("/")[2].decode()
@@ -236,7 +243,12 @@ class ShellTests(unittest.TestCase):
         self.assertIn('data-energy-view="solar"', page)
         self.assertIn('id="energy-period"', page)
         self.assertIn('Billing-cycle estimates', page)
-        self.assertIn('#panel-energy { max-width: 64rem; }', self.get("/assets/atlas.css")[2].decode("utf-8"))
+        css = self.get("/assets/atlas.css")[2].decode("utf-8")
+        self.assertIn('#panel-energy { max-width: 100rem; }', css)
+        self.assertIn('class="energy-layout"', page)
+        self.assertIn('class="energy-sidebar"', page)
+        self.assertLess(page.index('id="energy-history-chart"'), page.index('class="energy-sidebar"'))
+        self.assertIn('.energy-layout { grid-template-columns: minmax(0, 1.65fr)', css)
         self.assertIn('monthly.projected_import_kwh', source)
 
     def test_security_page_keeps_primary_alarm_separate_and_ids_confirmed(self):
@@ -291,7 +303,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('function pantryStatusCopy()', source)
         self.assertIn('`${missing} Missing`', source)
         self.assertIn('For Planned Meals', source)
-        self.assertIn('Items In Cart', source)
+        self.assertIn('Items In Cart', self.get("/")[2].decode("utf-8"))
         self.assertIn('Meals Planned', source)
         self.assertIn('function renderPantryStaples(values)', source)
         self.assertIn('["OK", "LOW"].includes', source)
@@ -319,7 +331,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('grid-template-rows: auto minmax(3rem, 1fr) auto;', stylesheet)
         self.assertIn('height: auto; min-height: 0; grid-template-columns:', stylesheet)
         self.assertIn('width: 4.875rem; height: 4.875rem;', stylesheet)
-        self.assertIn('.home-module-grid button > strong, .home-module-grid button > small { text-align: left;', stylesheet)
+        self.assertIn('.home-module-grid button > strong, .home-module-grid button > small { width: 100%; text-align: center;', stylesheet)
         self.assertIn('border-radius: 0;', stylesheet)
         self.assertIn('font-size: clamp(1rem, 1.05vw, 1.25rem);', stylesheet)
         self.assertIn('font-size: clamp(1.125rem, 1.15vw, 1.375rem);', stylesheet)
@@ -343,10 +355,10 @@ class ShellTests(unittest.TestCase):
         self.assertIn('id="travel-loyalty-view"', page)
         self.assertIn('id="travel-loyalty-list"', page)
         self.assertIn('id="loyalty-lounge-pass-count"', page)
-        self.assertIn('United Club Passes', page)
+        self.assertIn('Lounge Passes', page)
         self.assertNotIn('Balances verified', page)
         self.assertIn('Programs Tracked', page)
-        self.assertIn('Status Examples', page)
+        self.assertIn('Status Verified', page)
         self.assertIn('Progress Tracked', page)
         self.assertIn('Current Balance', source)
         self.assertIn('id="travel-source-list"', page)
@@ -380,7 +392,7 @@ class ShellTests(unittest.TestCase):
         self.assertIn('id="travel-departure-list"', page)
         self.assertNotIn('"Confirmation Pending"', source)
         self.assertNotIn('? "Available"', source)
-        self.assertIn('Flight segments will show lounge options', source)
+        self.assertIn('Delta Sky Club, Centurion, Sidecar, Escape Lounge, and USO', source)
         self.assertIn('travel/trip/', source)
 
     def test_native_travel_api_starts_as_a_healthy_empty_ledger(self):
@@ -392,6 +404,15 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["upcoming"], 0)
         self.assertIsNone(payload["policy"]["preferred_card"])
         self.assertEqual(payload["policy"]["lounge_profile"]["candidate_networks"], [])
+
+    def test_argo_api_exposes_tenant_aware_private_vehicle_records(self):
+        status, headers, body = self.get("/v1/argo")
+        payload = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(headers.get_content_type(), "application/json")
+        self.assertEqual(payload["tenant"]["id"], 0)
+        self.assertEqual(payload["summary"]["vehicles"], 0)
+        self.assertEqual(payload["assets"], [])
 
     def test_travel_review_endpoint_roundtrip_and_origin_guard(self):
         ledger = Path(self.temporary.name) / "travel.json"
@@ -420,19 +441,15 @@ class ShellTests(unittest.TestCase):
         self.assertIn('badge.hidden = total === 0;', source)
         self.assertIn('badge.textContent = total ? String(total) : "";', source)
 
-    def test_security_preview_uses_non_camera_controls(self):
+    def test_home_preview_is_removed_and_security_page_remains(self):
         _, _, body = self.get("/")
         _, _, javascript = self.get("/assets/atlas.js")
         page = body.decode("utf-8")
         source = javascript.decode("utf-8")
-        self.assertEqual(page.count('class="preview-card-image"'), 5)
-        self.assertIn('id="preview-value-5"', page)
-        self.assertIn('["Cyber Health", cyber?.fresh', source)
-        self.assertIn('const staples = pantryStaplesSummary();', source)
-        self.assertIn('[staples[0], staples[1], staples[2], "galleyquest"]', source)
-        self.assertIn('["Vacation IDS", ids.armed ? "Armed" : "Disarmed"', source)
-        self.assertIn('["Network", "Deferred"', source)
-        self.assertIn('["Host Protection", cyber?.fresh', source)
+        self.assertEqual(page.count('class="preview-card-image"'), 0)
+        self.assertNotIn('id="preview-value-5"', page)
+        self.assertIn('id="panel-security"', page)
+        self.assertIn('function renderSecurityPage()', source)
         self.assertNotIn("scrollIntoView", source)
 
     def test_security_cyber_uses_dedicated_evidence_not_service_scores(self):
@@ -442,45 +459,30 @@ class ShellTests(unittest.TestCase):
         page = body.decode("utf-8")
         source = javascript.decode("utf-8")
         stylesheet = css.decode("utf-8")
-        self.assertEqual(page.count('class="cyber-gauge"'), 5)
-        for label in ("Overall", "Network", "System", "Monitoring", "Hygiene"):
-            self.assertIn(f"<small>{label}</small>", page)
-        self.assertIn('class="security-health-summary"', page)
-        self.assertIn('id="security-health-status"', page)
+        self.assertNotIn('id="security-health-status"', page)
         self.assertNotIn('data-camera-preview="front-door"', page)
         self.assertNotIn('button.classList.toggle("security-cyber-card"', source)
         self.assertIn('fetchSnapshot("/v1/security/cyber")', source)
         self.assertIn('id="cyber-finding-list"', page)
         self.assertIn('id="cyber-coverage-note"', page)
         self.assertIn('Event Sources', source)
-        self.assertIn('"All Systems Operational and Healthy"', source)
         self.assertIn('.home-preview[data-preview="security"] .camera-preview-card { grid-column: auto;', stylesheet)
         self.assertIn('.home-preview[data-preview="security"] .security-cyber-card { grid-column: 1 / -1;', stylesheet)
         self.assertNotIn('.preview-card:nth-of-type', stylesheet)
 
-    def test_preview_headers_are_compact_and_system_status_is_counted(self):
+    def test_direct_navigation_preserves_system_status_counts(self):
         _, _, javascript = self.get("/assets/atlas.js")
         _, _, css = self.get("/assets/atlas.css")
         source = javascript.decode("utf-8")
         stylesheet = css.decode("utf-8")
-        expected = {
-            "home": "VESTA · HOME",
-            "energy": "SOL · ENERGY",
-            "security": "TITAN · SECURITY",
-            "pantry": "DEMETER · PANTRY",
-            "travel": "ORACLE · TRAVEL",
-            "maintenance": "VULCAN · MAINTENANCE",
-            "systems": "ATHENA · SYSTEMS",
-            "agents": "OLYMPUS · AGENTS",
-        }
-        for key, label in expected.items():
-            self.assertIn(f'{key}: ["{label}"', source)
+        self.assertNotIn('selectHomePreview', source)
+        self.assertNotIn('renderPreview', source)
+        self.assertIn('trigger.addEventListener("click", () => activateTab(trigger.dataset.tabTarget, true))', source)
         self.assertNotIn("PHYSICAL FIRST", source)
         self.assertIn('"All Systems Online"', source)
         self.assertIn('System${requiredSystemsOffline === 1 ? "" : "s"} Offline', source)
         self.assertIn('`Core Online · ${optionalSystemsOffline} Optional Offline`', source)
         self.assertIn('.home-preview-header #preview-summary { display: none; }', stylesheet)
-        self.assertIn('document.getElementById("preview-title").textContent = meta[0];', source)
         self.assertNotIn('document.getElementById("preview-eyebrow")', source)
 
     def test_headings_use_one_title_per_group_across_all_modules(self):
@@ -488,9 +490,10 @@ class ShellTests(unittest.TestCase):
         source = self.get("/assets/atlas.js")[2].decode("utf-8")
         stylesheet = self.get("/assets/atlas.css")[2].decode("utf-8")
         self.assertEqual(re.findall(r'<h1[^>]*>(.*?)</h1>', page), [
-            "ATHENA · SYSTEMS", "SOL · ENERGY", "AEOLUS · ENVIRONMENT",
+            "Calendar",
+            "DAEDALUS · SYSTEMS", "SOL · ENERGY", "AEOLUS · ENVIRONMENT",
             "TITAN · SECURITY", "DEMETER · PANTRY", "ORACLE · TRAVEL",
-            "VULCAN · MAINTENANCE", "Chat with Atlas", "Notifications",
+            "ARGO · VEHICLES", "VULCAN · MAINTENANCE", "Chat with Atlas", "Notifications",
         ])
         self.assertNotIn('class="eyebrow"', page)
         for removed_id in ("preview-eyebrow", "control-dialog-eyebrow"):
@@ -500,12 +503,12 @@ class ShellTests(unittest.TestCase):
                       "Upcoming Trips", "Reservations", "Charges", "Travel Rewards",
                       "Missing Ingredients", "Grocery Cart", "Atlas PC · Cyber Health"):
             self.assertIn(f'<h2>{title}</h2>', page)
-        for heading_id in ("preview-title", "control-dialog-title", "profile-title",
+        for heading_id in ("control-dialog-title", "profile-title",
                            "travel-detail-title", "travel-info-title", "travel-review-title",
                            "outdoor-weather-title", "ids-state"):
             self.assertIn(f'id="{heading_id}"', page)
         self.assertIn('<h2 id="travel-detail-title">Trip</h2>', page)
-        self.assertIn('<h2 id="preview-title">VESTA · HOME</h2>', page)
+        self.assertNotIn('id="preview-title"', page)
         self.assertIn('font-size: clamp(1.75rem, 3vw, 2.75rem);', stylesheet)
         self.assertIn('white-space: normal; overflow-wrap: break-word; text-wrap: pretty;', stylesheet)
 
@@ -516,7 +519,7 @@ class ShellTests(unittest.TestCase):
         source = javascript.decode("utf-8")
         self.assertEqual(page.count('class="home-camera-shortcut"'), 0)
         self.assertNotIn('class="preview-card camera-summary-card"', page)
-        self.assertIn('["Environment", environment[0], environment[1]', source)
+        self.assertIn('id="metric-environment"', page)
         self.assertIn('"east-hallway-temperature", "Hall"', source)
         self.assertIn('"office-temperature", "Office"', source)
         self.assertIn('"living-room-temperature", "Living"', source)
@@ -526,10 +529,15 @@ class ShellTests(unittest.TestCase):
 
     def test_shared_module_spacing_keeps_panels_and_actions_separated(self):
         _, _, css = self.get("/assets/atlas.css")
+        _, _, javascript = self.get("/assets/atlas.js")
         stylesheet = css.decode("utf-8")
+        script = javascript.decode("utf-8")
         self.assertIn(".tab-panel:not(.module-placeholder) > .text-button { margin-top: var(--section-gap); margin-bottom: var(--section-gap); }", stylesheet)
         self.assertIn(".quick-light-strip { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px; margin-top: var(--module-gap);", stylesheet)
         self.assertIn(".status-list.compact > .status-item:last-child:nth-child(odd) { grid-column: 1 / -1; }", stylesheet)
+        self.assertIn("repeat(auto-fit, minmax(min(100%, 14rem), 20rem));", stylesheet)
+        self.assertIn('homeassistant: "Home Assistant"', script)
+        self.assertIn('"open webui": "Open WebUI"', script)
 
     def test_navigation_uses_stateful_svg_icon_system(self):
         _, _, body = self.get("/")
@@ -552,9 +560,9 @@ class ShellTests(unittest.TestCase):
         self.assertIn('id="outdoor-weather-title">Weather Command', page)
         self.assertIn('id="weather-hourly-list"', page)
         self.assertIn('id="weather-daily-list"', page)
-        self.assertNotIn('KXXX_loop.gif', page)
-        self.assertIn('id="weather-radar-unconfigured"', page)
-        self.assertIn('Regional radar', page)
+        self.assertNotIn('ridge/standard/', page)
+        self.assertIn('id="weather-radar-image"', page)
+        self.assertIn('Auto-Playing', page)
         self.assertIn('id="open-radar"', page)
         self.assertIn('function renderOutdoorWeather()', source)
         self.assertIn('radarImage.dataset.radarBucket', source)

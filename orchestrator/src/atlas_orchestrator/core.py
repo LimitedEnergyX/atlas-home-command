@@ -12,6 +12,7 @@ from .config import Settings, configured_secrets
 from .ai_rules import load_ai_rules
 from .ledger import Ledger
 from .energy_store import EnergyStore
+from .asset_store import AssetStore
 from .maintenance import MaintenanceStore
 from .household_tools import HouseholdTools, authorized_commands, looks_like_household_command
 from .household_status import HouseholdStatus
@@ -34,11 +35,12 @@ class AtlasOrchestrator:
         self.redactor = Redactor(configured_secrets())
         self.ledger = Ledger(self.settings.data_dir / "atlas-ledger.sqlite3", self.redactor)
         self.energy_store = EnergyStore(self.settings.data_dir / "energy-history.sqlite3")
+        self.assets = AssetStore(self.settings.data_dir / "assets.sqlite3")
         self.maintenance = MaintenanceStore(self.settings.data_dir / "maintenance.sqlite3")
         self.policy = ActionPolicy()
         home_token = os.environ.get("ATLAS_HOME_ASSISTANT_TOKEN", "")
         self.household_tools = HouseholdTools(self.settings.home_assistant_url, home_token)
-        self.household_status = HouseholdStatus(self.household_tools)
+        self.household_observer = HouseholdStatus(self.household_tools)
         self.targets = {
             "status": StatusTarget(self.settings.data_dir),
             "jarvis-status": JarvisStatusTarget(
@@ -123,7 +125,7 @@ class AtlasOrchestrator:
         if mode == "review" and (not isinstance(spend_limit, (int, float)) or float(spend_limit) <= 0):
             raise ValueError("multi-model review requires an explicit positive spend_limit")
 
-        observation = self.household_status.answer(message) if mode != 'review' else None
+        observation = self.household_observer.answer(message) if mode != 'review' else None
         if observation is not None:
             request_id = str(uuid.uuid4())
             self.ledger.append('household_chat_status', request_id, observation)
@@ -543,7 +545,14 @@ class AtlasOrchestrator:
         return read_snapshot(self.settings.data_dir / "cyber-health.json")
 
     def energy_status(self) -> dict[str, Any]:
-        return self.targets["powerwall-status"].status()
+        from .charging_records import read_charging_records
+        result = self.targets["powerwall-status"].status()
+        references = read_charging_records(self.settings.data_dir / "charging-records.json")
+        if references["status"] != "not_imported":
+            charge = result.get("vehicle_charge_snapshot") or {"status": "references_only", "automatic_collection": False, "commands_enabled": False}
+            charge.update(records=references["records"], references_status=references["status"])
+            result["vehicle_charge_snapshot"] = charge
+        return result
 
     def energy_forecast(self) -> dict[str, Any]:
         return self.targets["powerwall-status"].forecast()
@@ -610,6 +619,9 @@ class AtlasOrchestrator:
     def travel_status(self) -> dict[str, Any]:
         return self.targets["travel"].status()
 
+    def argo_status(self) -> dict[str, Any]:
+        return self.assets.status()
+
     def confirm_travel_review(self, body: dict[str, Any]) -> dict[str, Any]:
         from .travel_store import TravelStore
         result = TravelStore(self.targets["travel"].path).confirm_review(body)
@@ -628,4 +640,3 @@ class AtlasOrchestrator:
             },
         )
         return result
-

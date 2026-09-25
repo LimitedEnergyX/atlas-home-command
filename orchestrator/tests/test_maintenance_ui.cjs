@@ -9,7 +9,7 @@ function harness(){
  const button={disabled:false},form=element('maintenance-form');
  form.values={equipment:'Example equipment',task:'Inspect filter',due_date:'2030-06-10'};
  form.resets=0;form.reset=()=>{form.resets++;form.values={};};form.querySelector=()=>button;
- const context={window:{},document:{getElementById:element},AbortSignal:{timeout:()=>({})},
+ const context={setInterval(){},window:{addEventListener(){}},document:{getElementById:element,addEventListener(){}},AbortSignal:{timeout:()=>({})},
  FormData:class{constructor(target){return new Map(Object.entries(target.values));}},
  fetch:(path,options)=>new Promise((resolve,reject)=>requests.push({path,options,reject,respond(data,status=200){resolve({ok:status>=200&&status<300,status,json:async()=>data});}}))};
  vm.runInNewContext(source,context);
@@ -25,7 +25,7 @@ function harness(){
  assert.equal(h.requests.length,3);assert.equal(h.requests[2].options.method,'GET');
  h.requests[2].respond(payload([{id:'new-task',equipment:'Example equipment',task:'Inspect filter',due_date:'2030-06-10',notes:'',completed_at:null,state:'due_soon'}]));
  await Promise.all([initial,save]);assert.equal(h.ui.snapshot.records[0].id,'new-task');
- assert.match(h.element('maintenance-records').innerHTML,/Inspect filter/);
+ assert.match(h.element('maintenance-records').innerHTML,/Inspect Filter/);
  assert.equal(h.form.resets,1);assert.equal(h.button.disabled,false);
  }
  {

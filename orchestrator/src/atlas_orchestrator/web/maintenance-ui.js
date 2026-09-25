@@ -3,8 +3,9 @@
   let inFlight = null;
   let snapshot = null;
   const escape = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const displayName = value => String(value ?? "").replace(/[_-]+/g," ").replace(/\s+/g," ").trim().split(" ").map(word=>!word||/^[A-Z0-9]{2,}$/.test(word)||/[A-Z]/.test(word.slice(1))?word:`${word[0].toUpperCase()}${word.slice(1)}`).join(" ");
   const labels = {overdue:"Overdue",due_soon:"Due within 30 days",scheduled:"Scheduled",completed:"Completed"};
-  const record = item => `<article class="maintenance-record" data-state="${escape(item.state)}"><div><strong>${escape(item.equipment)} · ${escape(item.task)}</strong><span>${labels[item.state] || "Scheduled"} · ${escape(item.due_date)}</span>${item.notes ? `<p>${escape(item.notes)}</p>` : ""}${item.completed_at ? `<small>Completed ${escape(item.completed_at.slice(0,10))}</small>` : ""}</div>${item.completed_at ? "" : `<button class="text-button" type="button" data-maintenance-complete="${escape(item.id)}">Mark Complete</button>`}</article>`;
+  const record = item => `<article class="maintenance-record" data-state="${escape(item.state)}"><div><strong>${escape(displayName(item.equipment))} · ${escape(displayName(item.task))}</strong><span>${labels[item.state] || "Scheduled"} · ${escape(item.due_date)}</span>${item.notes ? `<p>${escape(item.notes)}</p>` : ""}${item.completed_at ? `<small>Completed ${escape(item.completed_at.slice(0,10))}</small>` : ""}</div>${item.completed_at ? "" : `<button class="text-button" type="button" data-maintenance-complete="${escape(item.id)}">Mark Complete</button>`}</article>`;
   async function request(path, body) {
     const response = await fetch(path, {method:body?"POST":"GET",headers:{Accept:"application/json",...(body?{"Content-Type":"application/json"}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(10000)});
     const data = await response.json();
@@ -53,4 +54,10 @@
     catch(error){document.getElementById("maintenance-status").textContent=`Completion could not be confirmed. Refresh to check the record. ${error.message}`;button.disabled=false;}
   });
   window.AtlasMaintenance={load,get snapshot(){return snapshot;}};
+  const refreshVisible = () => {
+    if (!document.hidden && !document.getElementById('panel-maintenance').hidden) load();
+  };
+  setInterval(refreshVisible,15000);
+  window.addEventListener('focus',refreshVisible);
+  document.addEventListener('visibilitychange',refreshVisible);
 })();

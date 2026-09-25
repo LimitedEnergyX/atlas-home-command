@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test-calendar-history.cjs && node test-safe-defaults.cjs"
+    "test": "node test-calendar-history.cjs && node test-safe-defaults.cjs && node test-tesla-basic.cjs"
   },
   "keywords": [],
   "author": "",

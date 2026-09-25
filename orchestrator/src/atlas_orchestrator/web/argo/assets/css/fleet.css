@@ -1,0 +1,118 @@
+/* Keep Athena's light, vehicle-first visual language within Atlas. */
+:root { --fleet-header: 112px; }
+.shared-checklist-status { position:fixed; bottom:0; left:0; right:0; z-index:55; margin:0; padding:8px 16px; font-size:12px; text-align:center; color:var(--blue-ink); background:#e6ecf7; border-top:1px solid #ccd6e5; }
+body { padding-left:84px; padding-bottom:42px; }
+.shared-checklist-status { left:84px; }
+.fleet-site-rail { position:fixed; top:64px; bottom:0; left:0; width:84px; z-index:54; display:flex; flex-direction:column; gap:6px; padding:12px 8px; overflow-y:auto; background:#f8f9fb; border-right:1px solid var(--line); }
+.fleet-site-rail a { display:grid; justify-items:center; gap:4px; padding:10px 3px; border:1px solid transparent; border-radius:10px; text-decoration:none; color:#697382; }
+.fleet-site-rail b { font-size:9px; font-weight:600; }
+.fleet-site-rail a:hover { color:#263b60; background:#edf1f6; }
+.fleet-site-rail a[aria-current="page"] { color:#24436d; background:#e6edf7; border-color:#bfcee2; }
+.fleet-nav-icon { width:24px; height:24px; background:currentColor; -webkit-mask:var(--icon) center / contain no-repeat; mask:var(--icon) center / contain no-repeat; }
+.fleet-icon-home { --icon:url('/assets/icons/home.svg'); }
+.fleet-icon-calendar { --icon:url('/assets/icons/calendar.svg'); }
+.fleet-icon-energy { --icon:url('/assets/icons/energy.svg'); }
+.fleet-icon-environment { --icon:url('/assets/icons/environment-weather.svg'); }
+.fleet-icon-security { --icon:url('/assets/icons/security.svg'); }
+.fleet-icon-pantry { --icon:url('/assets/icons/pantry.svg'); }
+.fleet-icon-travel { --icon:url('/assets/icons/travel.svg'); }
+.fleet-icon-argo { --icon:url('/assets/icons/vehicles.svg'); }
+.fleet-icon-maintenance { --icon:url('/assets/icons/maintenance.svg'); }
+.fleet-icon-systems { --icon:url('/assets/icons/systems.svg'); }
+.fleet-icon-agents { --icon:url('/assets/icons/agents-work.svg'); }
+.fleet-icon-notifications { --icon:url('/assets/icons/notifications.svg'); }
+h1,h2,h3,h4 { text-transform:capitalize; }
+.fleet-topbar { height:64px; background:#fff !important; color:var(--ink); }
+.fleet-topbar .wrap { gap:12px; padding:0 24px; }
+.fleet-name { text-decoration:none; font-size:21px; font-weight:600; letter-spacing:.12em; }
+.fleet-name span { display:block; font-size:10px; letter-spacing:.12em; color:var(--muted); }
+.fleet-top-right { display:flex; align-items:center; gap:16px; }
+.atlas-brand { display:flex; align-items:center; gap:12px; flex-shrink:0; text-decoration:none; color:#171a20; }
+.atlas-brand strong { display:block; font-size:17px; letter-spacing:.28em; }
+.atlas-brand small { display:block; margin-top:3px; font-size:9px; letter-spacing:.17em; color:var(--muted); }
+.atlas-mark { width:44px; height:44px; flex:0 0 44px; border-radius:50%; display:grid; place-items:center; border:1px solid #54cfe1; box-shadow:0 0 30px #67e8f924; color:#e8faff; background:radial-gradient(circle,#183948,#060b15 72%); font:25px Georgia,serif; }
+.fleet-menu-toggle { display:grid; place-items:center; min-width:44px; min-height:44px; background:var(--bg-2); border:0; border-radius:6px; font-size:24px; color:var(--ink); cursor:pointer; }
+.fleet-subnav { position:fixed; top:64px; left:84px; right:0; height:48px; z-index:49; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 20px; background:#fff; border-bottom:1px solid var(--line); overflow-x:auto; white-space:nowrap; }
+.fleet-subnav strong { margin-right:16px; font-size:14px; }
+.fleet-subnav a { padding:8px 12px; text-decoration:none; font-size:13px; border-radius:5px; }
+[aria-current="page"] { background:var(--bg-2); font-weight:600; }
+.config { margin-top:var(--fleet-header); min-height:0; }
+.panel > .btn { display:flex; margin-top:10px; }
+.hero { margin-top:var(--fleet-header); }
+.hero .top { padding-top:44px; }
+.fleet-menu { position:fixed; inset:0 0 0 auto; margin:0; max-height:100dvh; height:100dvh; width:min(440px,100%); max-width:100%; padding:24px; border:0; background:#fff; color:var(--ink); overflow-y:auto; }
+.fleet-menu::backdrop { background:#0b122966; backdrop-filter:blur(3px); }
+.fleet-menu header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; }
+.fleet-menu header small { font-size:10px; letter-spacing:.14em; color:var(--muted); }
+.fleet-menu h2 { margin:3px 0; font-weight:500; }
+.fleet-menu details { border-top:1px solid var(--line); padding:12px 0; }
+.fleet-menu summary { font-weight:600; padding:12px 0; cursor:pointer; }
+.fleet-menu nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+.fleet-menu nav a { padding:12px; text-decoration:none; border-radius:5px; }
+.fleet-menu nav a:hover,.fleet-subnav a:hover { background:var(--bg-2); }
+.fleet-home { display:block; margin-top:20px; padding:14px; text-align:center; background:var(--blue); color:#fff; border-radius:6px; text-decoration:none; }
+.fleet-footnote { margin:0; padding:22px 24px; background:var(--bg-2); color:var(--muted); font-size:12px; text-align:center; }
+.fleet-overview { margin-top:var(--fleet-header); }
+.fleet-vehicle-visual { background:transparent; min-height:430px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0; border:0; }
+.fleet-vehicle-visual svg { width:min(380px,80%); height:180px; stroke:var(--vehicle-color,#26354b); fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+.fleet-vehicle-visual h2 { font-size:clamp(32px,5vw,56px); font-weight:500; margin:12px 0; }
+.fleet-vehicle-visual p { margin:0; color:var(--muted); }
+.fleet-owner-photo { display:block; width:100%; height:auto; max-height:560px; object-fit:contain; }
+.fleet-demo-photo { aspect-ratio:3 / 2; max-height:620px; object-fit:contain; }
+/* Retain the bottom 70% of the original photo so dealership signage is out of frame. */
+.fleet-harley-crop { position:relative; width:100%; aspect-ratio:2000 / 1050; overflow:hidden; }
+.fleet-harley-crop .fleet-owner-photo { position:absolute; bottom:0; left:0; width:100%; height:auto; max-height:none; }
+/* Remove 25% above and 22.5% below Big Red, preserving the entire truck. */
+.fleet-truck-crop { position:relative; width:100%; aspect-ratio:800 / 420; overflow:hidden; }
+.fleet-truck-crop .fleet-owner-photo { position:absolute; top:0; left:0; width:100%; height:auto; max-height:none; transform:translateY(-25%); }
+.fleet-vehicle-visual:has(.fleet-owner-photo) { min-height:0; }
+.fleet-vehicle-visual small { margin-top:12px; color:var(--muted); }
+.fleet-history-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; margin-bottom:24px; }
+.fleet-event-date { text-align:center; color:var(--muted); }
+.fleet-service-list { padding-left:1.25rem; margin:.75rem 0; text-align:left; line-height:1.5; }
+.fleet-service-list li { margin:.3rem 0; }
+.fleet-records details > summary { cursor:pointer; padding:.5rem 0; }
+.fleet-document-links { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px; }
+.fleet-records > .fleet-pending { margin:16px 0; }
+.vehicle-big-red { --vehicle-color:#973c38; }
+.vehicle-harley { --vehicle-color:#343434; }
+.vehicle-facts { margin:24px 0; }
+.vehicle-facts .opt { flex-wrap:wrap; }
+.vehicle-facts .opt span:last-child { white-space:normal; overflow-wrap:anywhere; }
+.fleet-records { scroll-margin-top:130px; }
+.fleet-records .feature { min-width:0; overflow-wrap:anywhere; }
+.fleet-page-heading { margin-top:var(--fleet-header); padding:64px 24px 38px; text-align:center; background:var(--bg-2); }
+.fleet-page-heading h1 { font-size:clamp(32px,5vw,48px); font-weight:500; margin:0; }
+.fleet-page-heading p { color:var(--muted); }
+.fleet-pending { padding:24px; border:1px solid var(--line); background:var(--bg-2); border-radius:6px; }
+.fleet-pending h3 { margin-top:0; }
+.fleet-status { margin:0; padding:10px 24px; background:var(--slate-bg); color:var(--blue-ink); font-size:13px; }
+/* Tile headings and footer captions share Atlas's centered alignment. */
+.tile .cap, .acc .acc-h, .feature > :is(h3,h4,small,footer),
+.panel > .panel-h, .fleet-pending > h3,
+.fleet-records :is(header,footer) { text-align:center; }
+button:focus-visible,a:focus-visible,summary:focus-visible { outline:3px solid #2763a0; outline-offset:3px; }
+@media(max-width:800px) {
+  .fleet-subnav { justify-content:flex-start; }
+  .fleet-topbar .wrap { padding:0 16px; }
+  .fleet-name { font-size:17px; }
+  .fleet-name span { display:none; }
+  .fleet-top-right { gap:10px; }
+  .fleet-alerts { display:none; }
+  .fleet-vehicle-visual { min-height:300px; }
+}
+@media(max-width:480px) {
+  .fleet-topbar .wrap { padding:0 14px; gap:8px; }
+  .atlas-brand { gap:8px; }
+  .atlas-brand strong { font-size:14px; letter-spacing:.12em; }
+  .atlas-brand small { display:none; }
+  .fleet-top-right { gap:8px; }
+}
+@media(max-width:700px) {
+  body { padding-left:0; padding-bottom:116px; }
+  .fleet-subnav { left:0; }
+  .fleet-site-rail { inset:auto 0 0; width:auto; height:72px; flex-direction:row; overflow-x:auto; overflow-y:hidden; padding:6px 8px; border-right:0; border-top:1px solid var(--line); }
+  .fleet-site-rail a { flex:0 0 64px; padding:5px 3px; }
+  .shared-checklist-status { left:0; bottom:72px; }
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { transition:none !important; } }

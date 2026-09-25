@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-label="Illustrative home with solar, storage, and electric vehicle">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#14395d"/><stop offset="1" stop-color="#2974a0"/></linearGradient></defs>
+<path fill="url(#sky)" d="M0 0h1000v560H0z"/><circle cx="840" cy="94" r="42" fill="#ffd460"/>
+<path d="M0 405Q220 310 435 390T1000 340V560H0Z" fill="#28604e"/>
+<path d="M225 290h580v190H225Z" fill="#a37864"/><path d="m180 300 200-150h300l170 150Z" fill="#323e51"/>
+<path d="m405 178-123 96h370l-57-96Z" fill="#143562" stroke="#99bdd8" stroke-width="4"/>
+<g stroke="#99bdd8" stroke-width="2"><path d="m360 178-102 96m190-96-63 96m150-96-23 96m48-63H369m260 31H326"/></g>
+<path d="M266 329h207v151H266Z" fill="#101b29"/><path d="M554 347h65v133h-65Z" fill="#173b54"/>
+<path d="M665 345h95v77h-95Z" fill="#83b6ce"/><path d="M713 345v77m-48-38h95" stroke="#dfded0" stroke-width="5"/>
+<rect x="490" y="363" width="42" height="78" rx="5" fill="#ecf1ef"/><path d="M496 369v65" stroke="#25d69c" stroke-width="4"/>
+<path d="m292 430 17-42h94l35 42v33H291Z" fill="#428dcb"/><path d="m321 397-13 28h102l-22-28Z" fill="#192a40"/>
+<circle cx="312" cy="456" r="18" fill="#101824"/><circle cx="418" cy="456" r="18" fill="#101824"/>
+<path d="M496 416h-22q-10 0-10 12v16h-25" fill="none" stroke="#ffd460" stroke-width="5"/>
+<text x="40" y="58" font-family="system-ui,sans-serif" font-size="22" fill="#e3f1fc">ILLUSTRATIVE HOME · NOT A REAL PROPERTY</text>
+</svg>

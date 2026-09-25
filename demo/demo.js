@@ -58,6 +58,7 @@
   const month=energySamples.samples["month:2026-08-01"].totals;
   data["/v1/energy/status"]={status:"healthy",demo:true,recorded_date:energySamples.default_date,solar_kw:kw("solar_kwh"),home_kw:kw("home_kwh"),battery_pct:charge.percent,reserve_pct:20,battery_kw:kw("battery_discharge_kwh")-kw("battery_charge_kwh"),grid_kw:kw("grid_import_kwh")-kw("grid_export_kwh"),grid_up:true,grid_direction:kw("grid_export_kwh")>kw("grid_import_kwh")?"exporting":"importing",charging:kw("battery_charge_kwh")>kw("battery_discharge_kwh"),polled_at:noon.at,today:{solar_kwh:recordedDay.totals.solar_kwh,home_kwh:recordedDay.totals.home_kwh,import_kwh:recordedDay.totals.grid_import_kwh,export_kwh:recordedDay.totals.grid_export_kwh},monthly:{cycle_start:"2026-08-01",cycle_end:"2026-08-31",days_elapsed:31,cycle_days:31,import_kwh:month.grid_import_kwh,export_kwh:month.grid_export_kwh,projected_import_kwh:month.grid_import_kwh,projected_export_kwh:month.grid_export_kwh,energy_charge:month.grid_import_kwh*.15,export_credit:month.grid_export_kwh*.06,estimated_bill:Math.max(0,month.grid_import_kwh*.15-month.grid_export_kwh*.06+15),bank_balance:18.5},rates:{energy:.15,buyback:.06}};
   window.AtlasHouseholdDemo.populate(data,{date,observed});
+  window.AtlasReleaseDemo?.populate(data,{date,observed});
   for(const value of Object.values(data))value.demo=true;
   const response=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json"}});
   // No reference to the original fetch is retained. Unknown routes and all writes fail closed.
@@ -73,7 +74,14 @@
   document.addEventListener("click",event=>{
     if(event.target.closest(blocked)){event.preventDefault();event.stopImmediatePropagation();}
     const link=event.target.closest("a");
-    if(link && !link.getAttribute("href")?.startsWith("#")){event.preventDefault();event.stopImmediatePropagation();}
+    if (link) {
+      const destination = new URL(link.href, location.href);
+      const base = new URL('.', document.querySelector('script[src$="demo.js"]').src);
+      const internal = destination.origin === base.origin &&
+        (destination.pathname === base.pathname || destination.pathname === base.pathname+'index.html' ||
+         destination.pathname === base.pathname+'argo/' || destination.pathname === base.pathname+'argo/vehicle.html');
+      if (!internal) {event.preventDefault();event.stopImmediatePropagation();}
+    }
   },true);
   document.addEventListener("submit",event=>{event.preventDefault();event.stopImmediatePropagation();},true);
   document.addEventListener("DOMContentLoaded",()=>{
@@ -81,7 +89,7 @@
     for(const id of ["panel-security","panel-environment","panel-systems","panel-agents","panel-travel"]){const panel=document.getElementById(id);if(panel){const note=document.createElement("p");note.className="demo-section-note";note.textContent="Illustrative demo data. No live services, scans, or controls.";panel.prepend(note);}}
     const lock=()=>document.querySelectorAll(blocked).forEach(el=>{el.setAttribute("aria-disabled","true");el.title="Read-only demonstration";});
     lock();new MutationObserver(lock).observe(document.body,{childList:true,subtree:true});
-    const radar=document.getElementById("weather-radar-image");if(radar)radar.closest("a").replaceWith(Object.assign(document.createElement("p"),{textContent:"Radar is disconnected in this public demo."}));
+    // The static Dallas radar is visibly marked as simulated and has no live feed.
   });
   window.AtlasDemo={calendar,energy:{dates:energySamples.dates,defaultDate:energySamples.default_date,sampleDate}};
 })();
