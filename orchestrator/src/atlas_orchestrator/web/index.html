@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#080b16">
     <title>Atlas · Household Command</title>
-    <meta name="description" content="Local household operations and intelligence.">
+    <meta name="description" content="Your home, in one place. Energy, comfort, vehicles, travel, meals, and maintenance in a local-first dashboard.">
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <link rel="stylesheet" href="/assets/atlas.css?v=20260924-athena-history">
     <script src="/assets/energy-ui.js?v=20260924-athena-history" defer></script>
@@ -50,7 +50,7 @@
 
       <main id="workspace" class="workspace" tabindex="-1">
         <section class="tab-panel calendar-panel" role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar" hidden>
-          <header class="page-heading"><h1>Calendar</h1><p>Appointments, Travel, And Household Plans</p></header>
+          <header class="page-heading module-identity"><img class="module-portrait" src="/assets/greek/vesta.png" alt="" width="80" height="80"><div><h1>Calendar</h1><p>Your next appointment. Your next adventure. One shared view.</p></div></header>
           <p id="calendar-source-status" class="independence-note" aria-live="polite">Loading saved calendar…</p>
           <div class="calendar-toolbar"><button type="button" id="calendar-previous" aria-label="Previous month">‹</button><h2 id="calendar-month"></h2><button type="button" id="calendar-next" aria-label="Next month">›</button><button type="button" id="calendar-today">Today</button></div>
           <div class="calendar-layout"><div id="calendar-grid" class="calendar-grid" aria-label="Calendar month"></div><section aria-labelledby="calendar-agenda-title"><h2 id="calendar-agenda-title">Upcoming</h2><div id="calendar-agenda" class="calendar-agenda"></div></section></div>
@@ -149,7 +149,7 @@
         </section>
 
         <section class="tab-panel" role="tabpanel" id="panel-systems" aria-labelledby="tab-systems" hidden>
-          <header class="page-heading"><h1>DAEDALUS · SYSTEMS</h1><p>One normalized view across Atlas infrastructure. Direct service ports remain behind the shell.</p></header>
+          <header class="page-heading module-masthead"><img class="module-art" src="/assets/heroes/systems.png" alt="" loading="lazy"><div><span class="module-kicker">Behind the scenes</span><h1>DAEDALUS · SYSTEMS</h1><p>Devices, services, and connection health at a glance.</p></div></header>
           <div class="systems-summary">
             <article><span class="pulse-dot"></span><div><small>Overall State</small><strong id="systems-state">Connecting</strong></div></article>
             <article><small>Last Observation</small><strong id="systems-observed">—</strong></article>
@@ -237,7 +237,7 @@
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel environment-panel" role="tabpanel" id="panel-environment" aria-labelledby="tab-environment" hidden>
-          <header class="page-heading environment-heading"><div><h1>AEOLUS · ENVIRONMENT</h1><p>Weather outside. Comfort and air quality inside.</p></div><span class="independence-note" id="environment-observed">Local Data</span></header>
+          <header class="page-heading environment-heading module-identity"><img class="module-portrait" src="/assets/greek/aeolus.png" alt="" width="80" height="80"><div><h1>AEOLUS · ENVIRONMENT</h1><p>Weather outside. Comfort and air quality inside.</p></div><span class="independence-note" id="environment-observed">Local Data</span></header>
           <section class="hvac-inline" aria-labelledby="environment-hvac-title">
             <header><h2 id="environment-hvac-title">HVAC</h2><p data-hvac-operation>Connecting to thermostat</p></header>
             <div class="hvac-inline-reading"><span>Current</span><strong data-hvac-current>—</strong></div>
@@ -251,7 +251,7 @@
           </section>
           <section class="weather-command" aria-labelledby="outdoor-weather-title">
             <div class="section-heading weather-command-heading">
-              <div><h2 id="outdoor-weather-title">Weather Command</h2><p id="weather-location">Copperas Cove, TX</p></div>
+              <div><h2 id="outdoor-weather-title">Weather Outlook</h2><p id="weather-location">Configured location</p></div>
               <a class="embedded-app-link" id="open-radar" href="https://radar.weather.gov/?vm=r" target="_blank" rel="noopener">Open Interactive Radar <span aria-hidden="true">↗</span></a>
             </div>
             <div class="weather-alert-list" id="weather-alert-list" hidden></div>
@@ -279,14 +279,15 @@
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel security-panel" role="tabpanel" id="panel-security" aria-labelledby="tab-security" hidden>
-          <header class="page-heading security-heading"><div><h1>TITAN · SECURITY</h1><p>Physical awareness first, with Atlas cyber health and a separate vacation-only secondary IDS.</p></div><span class="independence-note">Primary monitored alarm remains standalone</span></header>
+          <header class="page-heading security-heading module-identity"><img class="module-portrait" src="/assets/greek/titan.png" alt="" width="80" height="80"><div><h1>TITAN · SECURITY</h1><p>Entry sensors, vacation checks, and computer health.</p></div><span class="independence-note">Secondary awareness · Not a monitored alarm</span></header>
           <section class="ids-panel" id="ids-panel"><div class="ids-copy"><h2 id="ids-state">Vacation IDS · Checking Coverage</h2><p id="ids-detail">Reading Echo ultrasonic motion sensors…</p><div class="ids-sensors" id="ids-sensors"></div></div><div class="ids-control"><span id="ids-mode">Disarmed</span><button type="button" id="ids-arm" hidden>Arm Vacation IDS</button><button type="button" id="ids-confirm" hidden>Confirm Arm</button><button type="button" id="ids-cancel" hidden>Cancel</button><p id="ids-control-status" aria-live="polite"></p></div></section>
           <section class="status-section cyber-section"><div class="section-heading"><div><h2>Atlas PC · Cyber Health</h2></div><span class="independence-note" id="security-server-summary">Awaiting Collector</span></div><div class="security-gauge-grid" id="security-gauge-grid"></div><div class="status-list compact" id="security-control-list"></div><h3>Detection Review</h3><div class="status-list compact" id="cyber-finding-list"></div><details class="cyber-method"><summary>Coverage &amp; Method</summary><p id="cyber-coverage-note"></p><p>Checks every five minutes. Events are grouped, not counted as confirmed attacks. Only selected detection rules are covered; this is not a full security audit. Command lines and raw event messages stay out of Atlas. Network assessment is deferred until UniFi.</p><a class="embedded-app-link" id="open-sysmon" href="#" target="_blank" rel="noopener">Historical Grafana Charts</a></details></section>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel pantry-panel" role="tabpanel" id="panel-pantry" aria-labelledby="tab-pantry" hidden>
-          <header class="page-heading pantry-heading">
-            <div><h1>DEMETER · PANTRY</h1><p>Meal planning, grocery needs, and household stock in one Atlas workspace.</p></div>
+          <header class="page-heading pantry-heading module-masthead">
+            <img class="module-art" src="/assets/heroes/pantry.png" alt="" loading="lazy">
+            <div><span class="module-kicker">From shelf to table</span><h1>DEMETER · PANTRY</h1><p>Plan dinner. Check your staples. Know what to buy.</p></div>
             <a class="embedded-app-link" data-galleyquest-tab="stock" href="#pantry">Pantry Overview</a>
           </header>
           <div class="pantry-metric-grid" aria-label="Pantry status">
@@ -315,8 +316,9 @@
           </div>
         </section>
         <section class="tab-panel travel-panel" role="tabpanel" id="panel-travel" aria-labelledby="tab-travel" hidden>
-          <header class="page-heading travel-heading">
-            <div><h1>ORACLE · TRAVEL</h1></div>
+          <header class="page-heading travel-heading module-masthead">
+            <img class="module-art" src="/assets/heroes/travel.png" alt="" loading="lazy">
+            <div><span class="module-kicker">Every detail, before departure</span><h1>ORACLE · TRAVEL</h1><p>Itineraries, stays, costs, and the details still to confirm.</p></div>
             <div class="travel-heading-side"><a class="travel-loyalty-link" href="#travel/loyalty">Rewards →</a></div>
           </header>
           <div id="travel-overview">
@@ -379,7 +381,7 @@
           <dialog class="travel-dialog" id="travel-review-dialog" aria-labelledby="travel-review-title"><header><h2 id="travel-review-title">Review Trip</h2><button type="button" id="travel-review-close" aria-label="Close Review">×</button></header><p id="travel-review-route"></p><div id="travel-review-checklist"></div><p class="review-disclaimer">Your confirmation only. Bookings and insurance are not changed.</p><p id="travel-review-result" role="status"></p><button type="button" class="travel-review-button" id="travel-review-save">Confirm — Good To Go</button></dialog>
           <article class="travel-loyalty-view" id="travel-loyalty-view" hidden>
             <button class="travel-back" type="button" id="travel-loyalty-back">← Travel Overview</button>
-            <header class="travel-loyalty-header"><div><h2>Travel Rewards</h2><p>Balances remain separate by program; Atlas never invents a combined points total.</p></div><span id="travel-loyalty-observed">Awaiting Account Review</span></header>
+            <header class="travel-loyalty-header"><div><h2>Travel Rewards</h2><p>Your balances and progress, kept separate by program.</p></div><span id="travel-loyalty-observed">Awaiting Account Review</span></header>
             <section class="travel-summary-grid travel-loyalty-summary" aria-label="Loyalty summary">
               <article><span>Programs Tracked</span><strong id="loyalty-program-count">—</strong><small>Signed-In Travel Accounts</small></article>
               <article><span>Lounge Passes</span><strong id="loyalty-lounge-pass-count">—</strong><small>Recorded Passes Remaining</small></article>
@@ -394,12 +396,12 @@
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel argo-panel" role="tabpanel" id="panel-argo" aria-labelledby="tab-argo" hidden>
-          <header class="page-heading"><h1>ARGO · VEHICLES</h1><p>Local vehicle profiles and service records, separate from telemetry.</p></header>
+          <header class="page-heading"><h1>ARGO · VEHICLES</h1><p>Each vehicle. Every service. The records that matter.</p></header>
           <a class="primary-button" href="/argo/">Open Household Vehicles</a>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel" role="tabpanel" id="panel-maintenance" aria-labelledby="tab-maintenance" hidden>
-          <header class="page-heading"><div><h1>VULCAN · MAINTENANCE</h1><p>Service &amp; Upkeep</p></div></header>
+          <header class="page-heading module-masthead"><img class="module-art" src="/assets/heroes/maintenance.png" alt="" loading="lazy"><div><span class="module-kicker">Care that keeps things running</span><h1>VULCAN · MAINTENANCE</h1><p>What needs attention, what is planned, and what is done.</p></div></header>
           <div class="metric-grid maintenance-summary" id="maintenance-summary"><p class="empty-state">Loading service records…</p></div>
           <section class="maintenance-board"><header><h2>Service Schedule</h2><button type="button" class="text-button" id="maintenance-refresh">Refresh</button></header><p id="maintenance-status" role="status"></p><div id="maintenance-records"></div></section>
           <details class="maintenance-board"><summary>Add Service Task</summary>
@@ -415,7 +417,7 @@
           <p class="maintenance-note">Records are shared by this household. Service dates are entered by you, not inferred from sensor readings.</p>
         </section>
         <section class="tab-panel agents-panel" role="tabpanel" id="panel-agents" aria-labelledby="tab-agents" hidden>
-          <header class="page-heading agent-heading"><div><h1>Chat with Atlas</h1><p>Powered by local Hermes</p></div><div class="agent-provider-summary"><strong id="local-provider-name">Hermes</strong><small id="provider-count">Checking Providers</small></div><button class="text-button" type="button" data-tab-target="home">Return Home</button></header>
+          <header class="page-heading agent-heading module-identity"><img class="module-portrait" src="/assets/greek/athena.png" alt="" width="80" height="80"><div><h1>Chat with Atlas</h1><p>Ask, review, and decide. You stay in control.</p></div><div class="agent-provider-summary"><strong id="local-provider-name">Hermes</strong><small id="provider-count">Checking Providers</small></div><button class="text-button" type="button" data-tab-target="home">Return Home</button></header>
           <section class="agent-chat" aria-label="Hermes chat">
             <div class="agent-transcript" id="agent-transcript" role="log" aria-live="polite"><article class="agent-message assistant"><span>Hermes</span><p>How can I help with the household, systems, planning, or research?</p></article></div>
             <form class="agent-compose" id="agent-chat-form"><label for="agent-chat-input">Message Hermes</label><div><textarea id="agent-chat-input" rows="2" maxlength="12000" placeholder="Ask Hermes anything…"></textarea><button type="submit" id="agent-chat-send">Send</button></div><p class="agent-route-status" id="agent-route-status">Auto route · Local first · No cloud spend</p></form>

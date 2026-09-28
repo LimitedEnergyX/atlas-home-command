@@ -48,6 +48,9 @@ STATIC_ROUTES = {
 }
 
 # Explicit assets only. Never serve owner documents or arbitrary directories.
+for hero_name in ("travel", "pantry", "maintenance", "systems"):
+    STATIC_ROUTES[f"/assets/heroes/{hero_name}.png"] = WEB_ROOT / "heroes" / f"{hero_name}.png"
+
 for relative in ("assets/css/site.css", "assets/css/fleet.css", "assets/js/vehicle.js", "assets/js/fleet-shell.js"):
     STATIC_ROUTES[f"/argo/{relative}"] = WEB_ROOT / "argo" / relative
 

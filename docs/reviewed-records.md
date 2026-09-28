@@ -55,7 +55,7 @@ The built-in static demo uses fictional references independently of this local f
 
 ## Vehicle profiles
 
-The Argo database starts empty. Prepare a JSON file with `schema_version: 1` and an `assets` array. Each asset requires `id`, `name`, and `source`. Supported internal slots are `vehicle-athena`, `vehicle-big-red`, and `vehicle-harley`, displayed by the navigation as Electric Car, Truck, and Motorcycle.
+The Argo database starts empty. Prepare a JSON file with `schema_version: 1` and an `assets` array. Each asset requires `id`, `name`, and `source`. Supported internal slots are `vehicle-athena`, `vehicle-big-red`, and `vehicle-harley`. The demo presents a Tesla Model Y, a truck, and a motorcycle. These example labels and generated images are not specifications inferred from imported records.
 
 Optional fields: `manufacturer`, `model`, `model_year`, `summary`, `color`, `odometer_miles`, and `events`. Event fields are `event_date` (YYYY-MM-DD), `title`, `detail`, and `state` (complete, planned, or canceled). Imported mileage is approximate, not telemetry. Separate service items with semicolons for bullet display.
 

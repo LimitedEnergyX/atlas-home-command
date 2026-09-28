@@ -54,7 +54,7 @@
       if (details.odometer) facts.append(fact('Mileage',(details.odometer.approximate ? 'Approx. ' : '') + Number(details.odometer.miles).toLocaleString() + ' mi' + (details.odometer.approximate ? '' : ' · Reported ' + details.odometer.as_of)));
       panel.append(el('p',asset.summary,'muted'),link('Ownership & Records','ownership'),link('Service & Maintenance','service'));
       config.append(visual,panel); root.append(config);
-      const content = el('section',null,'section wrap'); content.append(el('div',asset.name,'eyebrow'),el('h2','Everything In One Place'));
+      const content = el('section',null,'section wrap'); content.append(el('div',asset.name,'eyebrow'),el('h2','Your Vehicle, At A Glance'));
       const tiles = el('div',null,'grid3');
       for (const [key,title] of nav.sections.filter(s => s[0] !== 'overview')) { const a = link(title,key); a.className = 'feature'; tiles.append(a); }
       content.append(tiles); root.append(content);
@@ -63,13 +63,13 @@
     }
     const records = el('section',null,'section wrap fleet-records');
     const notes = {
-      technology:['Vehicle Specifications','Confirm the model year, trim, engine, equipment, and owner manual before adding specifications.'],
-      energy:['Fuel & Energy Records','Fuel type, tank capacity, fill-ups, mileage, and running costs have not been recorded. Vehicle readings are displayed separately on the Energy page.'],
-      care:['Care Plan','Add the vehicle-specific cleaning, storage, tire, and battery-care guidance from its owner manual.'],
-      service:['Service History & Schedule','No verified service history or maintenance intervals are recorded yet. Add mileage, dated receipts, and the correct owner manual before setting reminders.'],
-      ownership:['Ownership Documents','Registration, insurance, warranty, and recovery documents still need to be linked to this vehicle.'],
-      guide:['Vehicle Guide','Add the owner manual, starting procedure, emergency instructions, and trusted service contacts for this vehicle.'],
-      overview:['Profile In Progress','This page uses the existing Atlas vehicle record. Unrecorded facts remain clearly marked until the household supplies them.'],
+      technology:['Specifications To Confirm','Model year, trim, equipment, and the matching owner manual.'],
+      energy:['Fuel & Charging','Review vehicle readings and charging references on Energy. Add reviewed fuel receipts here when available.'],
+      care:['Care Plan','Keep cleaning, storage, tires, and battery care aligned with the owner manual.'],
+      service:['Service Planning','Use the records above, current mileage, and the owner manual to plan the next service. Missing records do not mean overdue.'],
+      ownership:['Ownership Records','Keep registration, insurance, and warranty references together. Source documents remain private.'],
+      guide:['Vehicle Guide','Owner manual, emergency guidance, and trusted service contacts. Add verified references when available.'],
+      overview:['Profile Details','Saved records, not live telemetry. Unrecorded details stay unknown.'],
     };
     if (page === 'ownership' || page === 'overview') {
       records.append(el('h2','Vehicle Identity'));

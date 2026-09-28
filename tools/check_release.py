@@ -23,6 +23,14 @@ PATTERNS = {
     "private LAN address": r"\b192\.168\.\d{1,3}\.\d{1,3}\b",
 }
 
+# Generated editorial page headers, reviewed individually for public use.
+APPROVED_RASTERS |= {
+    f"orchestrator/src/atlas_orchestrator/web/heroes/{name}.png"
+    for name in ("travel", "pantry", "maintenance", "systems")
+}
+# Screenshots of this disconnected public demo only, never the private deployment.
+APPROVED_RASTERS |= {f"docs/images/{name}.png" for name in ("home", "energy", "travel", "vehicles", "pantry", "environment")}
+
 
 def check():
     issues=[]

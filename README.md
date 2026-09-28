@@ -1,8 +1,16 @@
 # Atlas Home Command Center
 
-A local-first household dashboard for energy, home controls, appointments, vehicles, travel, pantry, and maintenance.
+A local-first command center for energy, home controls, appointments, vehicles, travel, pantry, and maintenance. Each area has its own visual identity, but the important readings and actions stay close at hand.
 
 This repository is a **sanitized distribution**, not a backup of a household installation. It starts without personal records or credentials. Optional integrations require your own configuration and authorization. Local-first does not mean every provider works offline: Tesla and some Home Assistant integrations depend on their vendor clouds.
+
+## Explore the interface
+
+| Energy | Travel |
+|:--|:--|
+| ![Solar and household energy artwork](orchestrator/src/atlas_orchestrator/web/atlas-house-hilltop.png) | ![Illustrative Atlas travel dashboard](docs/images/travel.png) |
+
+The images above are from the sanitized demo. The energy house image is owner-approved artwork. The travel screenshot shows fictional sample records, not a live itinerary.
 
 ## September interface update
 
@@ -15,7 +23,16 @@ This repository is a **sanitized distribution**, not a backup of a household ins
 
 The demo uses generated artwork and fictional household, vehicle, calendar, and travel examples. Sol includes the owner's explicitly approved house illustration; the Home hero is separate and unchanged. Vehicle artwork includes a Tesla Model Y, and the Dallas storm radar is clearly labeled as simulated. The previously approved energy samples retain their original dates; they are not live readings.
 
-![Owner-approved energy house artwork](orchestrator/src/atlas_orchestrator/web/atlas-house-hilltop.png)
+## Architecture at a glance
+
+| Layer | Role |
+|:--|:--|
+| Browser or household tablet | Opens Atlas pages and, if configured, Home Assistant. No direct access to private service ports is needed. |
+| Atlas orchestrator | Serves the interface, applies the operating charter, and validates supported reads and writes. |
+| Local adapters and ledgers | Normalize energy and device information, then retain reviewed household records in local storage. |
+| Optional integrations | Home Assistant, Tesla, and other providers remain separately configured. Some rely on vendor clouds. |
+
+This is a deployment overview, not a claim that every integration is included or active. See [configuration](docs/configuration.md) and [security boundaries](SECURITY.md) for exact ports, trust boundaries, and setup.
 
 ## Preview without connecting anything
 
