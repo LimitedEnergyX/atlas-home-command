@@ -1,4 +1,4 @@
-// Runs real routing/preview handlers without opening a browser or calling household APIs.
+// Runs real one-tap routing handlers without calling household APIs.
 const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:assert/strict');
 const source = fs.readFileSync(require('node:path').join(__dirname,'../src/atlas_orchestrator/web/atlas.js'),'utf8');
 const modules = ['home','energy','environment','security','pantry','travel','maintenance','systems','agents','notifications'];
@@ -12,48 +12,39 @@ const tablist = element('module-rail');
 tablist.setAttribute('aria-orientation','vertical');
 const rail = modules.map(name => {const tab=element(`tab-${name}`);tab.dataset.tab=name;tab.closest=()=>tablist;return tab;});
 const panels = modules.map(name => ({id:`panel-${name}`,hidden:name!=='home'}));
-const context = {state:{preview:'home',forecast:null,home:null},tabs:rail,panels,location:{hash:'#home'},window:{scrollTo(){}},atlasChatDialog:{open:false},closeAtlasChat(){},syncAgentViewport(){},
+const context = {state:{preview:'home',forecast:null,home:null},tabs:rail,panels,atlasChatDialog:{open:false},location:{hash:'#home'},window:{scrollTo(){}},
   document:{querySelectorAll:()=>tiles,getElementById:element,body:{classList:{toggle(){}}}},
   setPreviewCards:cards=>{context.cards=cards;},homeCards:()=>[],energyCards:()=>[],homeEnvironmentSummary:()=>['72°F','Indoor'],
   environmentReading:()=>null,readingText:()=>'-',
   loadEnergyHistory(){},loadEnvironmentHistory(){},loadHousehold(){},renderEnvironmentPage(){},renderPantryPage(){},renderTravelPage(){},renderEntityInventory(){},renderAgents(){},renderSecurityPage(){},renderHomeTravelTrips(){},
 };
 context.history={replaceState(_state,_title,hash){context.location.hash=hash;}};
+context.window.AtlasEnergy={open(){}};
+context.window.AtlasMaintenance={load(){}};
+context.window.AtlasCalendar={load(){}};
 vm.createContext(context);
 for (const [start,end] of [
   ['function activateTab(', '\nfor (const tab of tabs)'],
   ['\nfor (const tab of tabs) {', '\nfor (const trigger of document.querySelectorAll("[data-tab-target]"))'],
   ['function safeText(', '\nfunction serviceById('],
-  ['const previewMeta =', '\nfunction setPreviewCards('],
-  ['function renderPreview(', '\nfunction statusClass('],
   ['for (const trigger of document.querySelectorAll("[data-tab-target]"))', '\nfunction updateClock('],
 ]) vm.runInContext(source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start))),context);
 
 const environment = element('tile-environment');
 environment.events.click({detail:1});
-assert.equal(context.location.hash,'#home');
-assert.equal(context.state.preview,'environment');
-assert.equal(element('open-preview').dataset.fullTab,'environment');
-assert.equal(element('open-preview').firstChild.textContent,'Open Environment ');
-assert.equal(context.cards[0][0],'Indoors');
-assert.equal(context.cards[1][1],'N/A','missing weather must stay unknown');
-environment.events.click({detail:2});
-environment.events.dblclick();
 assert.equal(context.location.hash,'#environment');
 assert.equal(panels.find(panel=>panel.id==='panel-environment').hidden,false);
 assert.equal(element('tab-environment').focused,true);
 
 for (const name of modules.filter(name=>name!=='home'&&name!=='notifications')) {
   context.activateTab('home'); context.state.preview='home';
-  element(`tile-${name}`).events.dblclick();
+  element(`tile-${name}`).events.click({detail:1});
   assert.equal(context.location.hash,`#${name}`,name);
+  assert.equal(element(`tile-${name}`).events.dblclick,undefined);
 }
 context.activateTab('home');context.state.preview='home';
-environment.events.click({detail:1});environment.events.click({detail:1});
-assert.equal(context.location.hash,'#environment','repeat tap/keyboard activation remains available');
-context.activateTab('home');context.state.preview='home';
-environment.events.click({detail:1});context.activateTab(element('open-preview').dataset.fullTab,true);
-assert.equal(context.location.hash,'#environment','single-activation Open Environment destination');
+environment.events.click({detail:0});
+assert.equal(context.location.hash,'#environment','keyboard activation navigates immediately');
 function key(name,key) {
   let prevented=false;
   element(`tab-${name}`).events.keydown({key,preventDefault(){prevented=true;}});
@@ -84,4 +75,11 @@ for (const [orientation,next,previous,unused] of [
     assert.equal(key('home',ignored),false); selected('home');
   }
 }
-console.log('Home navigation: previews, double-click, repeat tap, destinations, and actual responsive rail keyboard handlers passed.');
+context.location.replace = path => { context.destination = path; };
+context.activateTab('argo');
+assert.equal(context.destination, '/argo/', 'Vehicles and legacy #argo must open the imported fleet site');
+context.destination = null;
+const argoTile=tiles[0];argoTile.dataset.tabTarget='argo';
+argoTile.events.click({detail:1});
+assert.equal(context.destination, '/argo/', 'A single Home vehicle-card tap opens the full site');
+console.log('Home navigation: single-tap destinations, keyboard activation, fleet routing, and responsive rail keyboard handlers passed.');

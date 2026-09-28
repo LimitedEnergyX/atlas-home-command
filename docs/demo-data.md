@@ -6,7 +6,12 @@
 - Pantry: seven staple names and four recipe names and ingredient lists read from the owner's library, approved for the demo. No private recipe IDs, credentials, account URLs, preparation prose, or purchase history are included.
 - Meal planning: four illustrative dinners for the next calendar week. Nine grocery items are pending purchase, including eight missing recipe ingredients and bread. No order or live meal plan was created.
 - Travel: two wholly fictional trips, DFW to SJC via DEN for personal travel and DFW to IAD for work. United Airlines, United Explorer, IHG, and Hertz replace the private travel brands. All flight numbers, schedules, hotels, bookings, costs, confirmations, balances, and status examples are fictional. Qualification meters are personal example goals, not published program thresholds. Coverage and lounge admission remain unverified.
-- Network, security, and Athena: simulated values and generic device names. No actual UniFi controller has been contacted. No scan, arm/disarm action, monitoring job, firewall change, or device command is performed.
+- Network and security: simulated values and generic device names. No actual UniFi controller has been contacted. No scan, arm/disarm action, monitoring job, firewall change, or device command is performed.
+- Vehicle charging: fictional readings and reviewed-reference examples. Home-source energy is shown only where the example explicitly supplies it. Rated miles are not inferred from kWh. Sample readings are not a complete session history.
+- Calendar: two fictional date references, separate from the energy-history date selector. No connected calendar is queried or changed by the demo.
+- Vehicles: Tesla Model Y, Chevrolet Silverado, and Harley-Davidson examples with generated photographic-style artwork and fictional service records. No owner vehicle photos, plates, VINs, or documents are included in these additions.
+- House artwork: Sol reuses the owner's existing hilltop-house illustration with explicit approval. It depicts the owner's property. The separate Home hero is unchanged. Historical energy samples retain their recorded dates and are labeled as not live.
+- Radar: a static, generated Dallas-Fort Worth storm scenario labeled simulated in the image and card. It is not current weather, a forecast, or a real alert.
 - Maintenance: illustrative annual solar-panel cleaning record, not a booked service or universal recommended cleaning interval.
 
 ## Planned UniFi equipment

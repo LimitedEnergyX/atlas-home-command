@@ -24,6 +24,7 @@ const context={document,window,state,Date,Intl,URL,Response,console,location:{hr
  formatMoney:(x,c="USD")=>new Intl.NumberFormat("en-US",{style:"currency",currency:c}).format(x),
  renderCyberHealth(){}};
 vm.createContext(context);
+vm.runInContext(js.slice(js.indexOf('function displayName('),js.indexOf('function currentProfile(')),context);
 for(const file of ["energy-samples.js","household-samples.js","demo.js"])vm.runInContext(fs.readFileSync("demo/"+file,"utf8"),context);
 const text=node=>[node.textContent,...node.children.map(text)].join(" ");
 (async()=>{
@@ -50,7 +51,7 @@ const text=node=>[node.textContent,...node.children.map(text)].join(" ");
  nodes.get("entity-category").value="all";
  vm.runInContext("renderEntityInventory()",context);
  assert(text(nodes.get("entity-list")).includes("Guest Bath"));
- vm.runInContext("renderTravelPage();renderHomeTravelTrips()",context);
+ vm.runInContext("renderTravelPage()",context);
  for(const trip of state.travel.trips){
   assert.equal(vm.runInContext(`renderTravelDetail("${trip.id}")`,context),true);
   for(const id of ["travel-detail-meta","travel-detail-card","travel-reservation-list","travel-charge-list","travel-lounge-list"]){

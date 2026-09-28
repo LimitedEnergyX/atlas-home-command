@@ -157,7 +157,7 @@ class CapabilityTests(unittest.TestCase):
             def generate(self, request, timeout_seconds): raise AssertionError('Status must not use a model')
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {'ATLAS_HOME_ASSISTANT_TOKEN': ''}):
             app = AtlasOrchestrator(Settings(Path(tmp), retry_budget=0), {'ollama': NoInference('ollama')})
-            app.household_status = self.status
+            app.household_observer = self.status
             result = app.chat({'message': 'Are all leak sensors dry?', 'mode': 'local'})
             self.assertEqual(result['status'], 'answered')
             self.assertEqual(result['route']['provider'], 'home-assistant')

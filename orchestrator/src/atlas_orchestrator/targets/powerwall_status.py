@@ -30,15 +30,17 @@ class PowerwallStatusTarget:
     def status(self) -> dict[str, Any]:
         try:
             source = self._reader(self.endpoint, self.timeout)
-            today = source.get("financials", {}).get("today", {})
+            financials = source.get("financials") or {}
+            today = financials.get("today", {})
             grid_kw = self._number(source.get("grid"))
-            financials = source.get("financials", {})
             monthly = financials.get("monthly", {})
             cycle = self._billing_cycle(source.get("polled_at"), monthly)
             return {
                 "adapter": self.name,
                 "status": "healthy",
                 "polled_at": source.get("polled_at"),
+                "tesla_vehicles": self._vehicle_summary(source.get("tesla_vehicles")),
+                "vehicle_charge_snapshot": self._charge_snapshot(source.get("vehicle_charge_snapshot")),
                 "battery_pct": self._number(source.get("battery")),
                 "reserve_pct": self._number(source.get("reserve")),
                 "solar_kw": self._number(source.get("solar")),
@@ -177,6 +179,65 @@ class PowerwallStatusTarget:
             }
         except (TypeError, ValueError, OverflowError):
             return {}
+
+    @staticmethod
+    def _charge_snapshot(source: Any) -> dict[str, Any] | None:
+        if not isinstance(source, dict) or source.get("status") not in {"read_success", "basic_status"}:
+            return None
+        charge = source.get("charge_state")
+        if not isinstance(charge, dict):
+            return None
+        # Vehicle samples stay separate from household power and historical attribution.
+        basic = source.get("status") == "basic_status"
+        result = {"status": "periodic_sample" if basic else "snapshot_only", "checked_at": source.get("checked_at"),
+                  "automatic_collection": basic and source.get("automatic_collection") is True, "commands_enabled": False,
+                  "charging_state": str(charge.get("charging_state") or "Unknown")[:80]}
+        if basic:
+            result.update({"collection_status": str(source.get("collection_status") or "Unknown")[:100],
+                           "last_check_at": source.get("last_check_at"),
+                           "next_check_at": source.get("next_check_at"), "update_interval_minutes": 30})
+        for key in ("battery_level", "charge_limit_soc", "charger_power", "battery_range",
+                    "charge_energy_added", "charge_miles_added_rated", "charger_actual_current", "charger_voltage", "timestamp"):
+            value = charge.get(key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool) and float('-inf') < value < float('inf'):
+                result[key] = value
+        if basic:
+            result["observations"] = []
+            rows = source.get("observations")
+            for row in (rows[-1500:] if isinstance(rows, list) else []):
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    observed = datetime.fromisoformat(str(row.get("observed_at")).replace("Z", "+00:00"))
+                except (ValueError, TypeError):
+                    continue
+                item = {"observed_at": observed.isoformat(), "charging_state": str(row.get("charging_state") or "Unknown")[:80]}
+                for key in ("battery_level", "charger_power", "charge_energy_added", "charge_miles_added_rated"):
+                    value = row.get(key)
+                    if isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value < float('inf'):
+                        item[key] = value
+                result["observations"].append(item)
+            count = source.get("stored_observation_count")
+            result["stored_observation_count"] = count if isinstance(count, int) and not isinstance(count, bool) and count >= 0 else len(result["observations"])
+        return result
+
+    @staticmethod
+    def _vehicle_summary(source: Any) -> dict[str, Any]:
+        if not isinstance(source, dict):
+            source = {}
+        vehicles = source.get("vehicles")
+        if not isinstance(vehicles, list):
+            vehicles = []
+        return {
+            "status": source.get("status", "not_checked"),
+            "observed_at": source.get("observed_at"),
+            "information_access": source.get("information_access", "unknown"),
+            "vehicles": [{"name": str(v.get("name") or "Tesla Vehicle")[:120],
+                          "state": v.get("state", "unknown")}
+                         for v in vehicles[:100] if isinstance(v, dict)],
+            "live_readings": "disabled_metered_endpoint",
+            "commands_enabled": False,
+        }
 
     @staticmethod
     def _read(endpoint: str, timeout: float) -> dict[str, Any]:

@@ -15,6 +15,7 @@ const document = {createElement:()=>new Element(),getElementById:id=>{assert(nod
 const state = {cyber:{status:'partial',fresh:true,summary:{passed:4,total:4,high:0,review:0},checks:[{id:'test',label:'Firewall',status:'pass'}],channels:[{name:'Defender',status:'current'},{name:'Security',status:'access_denied'},{name:'Sysmon',status:'stopped'}],findings:[]}};
 const ctx = {state,document,safeText:(x,f)=>x||f,humanTime:()=> 'Now'};
 vm.createContext(ctx);
+vm.runInContext(js.slice(js.indexOf('function displayName('),js.indexOf('function currentProfile(')),ctx);
 vm.runInContext(js.slice(js.indexOf('function cyberLabel('),js.indexOf('function systemNotices(')),ctx);
 vm.runInContext(js.slice(js.indexOf('function statusClass('),js.indexOf('function setOverall(')),ctx);
 vm.runInContext(js.slice(js.indexOf('function renderCyberHealth('),js.indexOf('async function setVacationIDS(')),ctx);

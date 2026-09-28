@@ -54,7 +54,7 @@ async function run() {
     assert.equal(calls.length,0,'unavailable or unsupported controls never send');
   }
   reset(snapshot(null,{current_temperature:null}));
-  assert(surfaces.every(surface=>surface.current.textContent==='N/A' && surface.target.textContent==='N/A'),'no invented default or zero');
+  assert(surfaces.every(surface=>surface.current.textContent==='—' && surface.target.textContent==='—'),'no invented default or zero');
   reset(snapshot(74,{unit:null}));
   assert(!surfaces[0].up.disabled,'existing Fahrenheit adapter allows absent display unit');
   reset(snapshot(60));context.adjustTemperature(-1);assert.equal(state.hvacDraft,60);assert(surfaces.every(surface=>surface.down.disabled));
@@ -94,7 +94,7 @@ async function run() {
   state.home=snapshot(75);context.renderHvacControl();
   assert(surfaces.every(surface=>surface.status.textContent.startsWith('Target confirmed')));
   reset();context.adjustTemperature(1);context.fetch=async()=>response({status:'unavailable'});await context.applyTemperature();
-  assert(surfaces.every(surface=>surface.apply.disabled && surface.target.textContent==='N/A'));
+  assert(surfaces.every(surface=>surface.apply.disabled && surface.target.textContent==='—'));
   for (const failure of [async()=>{throw new Error('Timeout');},async()=>({ok:false,json:async()=>({error:'Rejected'})}),async()=>({ok:true,json:async()=>({status:'failed'})})]) {
     reset();context.adjustTemperature(1);context.fetch=failure;await context.applyTemperature();
     assert(surfaces.every(surface=>surface.status.textContent.includes('Unable to confirm') && surface.apply.disabled));
@@ -122,7 +122,7 @@ async function run() {
   assert.equal(state.home.climate.target_temperature,75,'old refresh cannot overwrite post-command readback');
   context.fetchSnapshot=async()=>null;
   await context.refresh();
-  assert(surfaces.every(surface=>surface.up.disabled && surface.target.textContent==='N/A'),'failed refresh disables stale controls');
+  assert(surfaces.every(surface=>surface.up.disabled && surface.target.textContent==='—'),'failed refresh disables stale controls');
   reset();context.adjustTemperature(1);context.fetch=async()=>{throw new Error('Timeout');};await context.applyTemperature();
   context.fetchSnapshot=async url=>({ok:true,json:async()=>url==='/v1/home/status' ? snapshot(75) : {}});
   await context.refresh();

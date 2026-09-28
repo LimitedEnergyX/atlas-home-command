@@ -39,6 +39,12 @@ Weather requires explicit `LAT`, `LON`, and an optional display label `WEATHER_L
 
 Utility variables use the `UTILITY_` prefix: `ENERGY_RATE`, `BUYBACK_RATE`, `BASE_CHARGE`, `TDU_FIXED`, `TDU_KWH`, `GRR_RATE`, `TAX_RATE`, `BUYBACK_BANK`, and `CYCLE_DAY`. Financial output also requires `ATLAS_RATES_CONFIGURED=1`. The calculation is a configurable estimate based on a particular tariff structure, not a universal billing engine or billing advice. Verify it against the actual contract and statement before relying on it.
 
+## Reviewed records and vehicle readings
+
+For the optional outbound-only vehicle reader, see [Basic Tesla vehicle readings](tesla-basic.md). It is disabled by default and does not require an inbound receiver or router forwarding.
+
+For the saved calendar, charging references, and insert-only vehicle importer, see [Reviewed local records](reviewed-records.md). These files are private operator inputs, not public demo fixtures.
+
 ## AI operating charter
 
 `AI_RULES.md` at the repository root and the packaged copy in `orchestrator/src/atlas_orchestrator/AI_RULES.md` must stay byte-identical, and their SHA-256 must match `AI_RULES_SHA256` in `ai_rules.py`. Every AI request verifies this. To adopt your own charter, edit both files, update the hash, and run the tests. A mismatch stops AI requests and leaves manual controls working.

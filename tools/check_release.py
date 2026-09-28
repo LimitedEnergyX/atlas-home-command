@@ -10,12 +10,26 @@ APPROVED_RASTERS = {"orchestrator/src/atlas_orchestrator/web/heroes/atlas-home-d
     f"orchestrator/src/atlas_orchestrator/web/greek/{name}.png"
     for name in ("vesta", "sol", "aeolus", "titan", "demeter", "oracle", "vulcan", "athena", "olympus")
 }
+# Individually reviewed September 25 assets. The owner explicitly approved the
+# existing house illustration; the vehicle and simulated radar images are generated.
+APPROVED_RASTERS |= {
+    f"orchestrator/src/atlas_orchestrator/web/{name}.png"
+    for name in ("atlas-house-hilltop", "model-y", "pickup", "motorcycle", "dallas-radar-demo")
+}
 PATTERNS = {
     "private key": r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
     "provider credential": r"\b(?:sk-proj-|sk-ant-|ghp_|github_pat_)[A-Za-z0-9_-]{30,}",
     "JWT-shaped credential": r"\beyJ[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{20,}",
     "private LAN address": r"\b192\.168\.\d{1,3}\.\d{1,3}\b",
 }
+
+# Generated editorial page headers, reviewed individually for public use.
+APPROVED_RASTERS |= {
+    f"orchestrator/src/atlas_orchestrator/web/heroes/{name}.png"
+    for name in ("travel", "pantry", "maintenance", "systems")
+}
+# Screenshots of this disconnected public demo only, never the private deployment.
+APPROVED_RASTERS |= {f"docs/images/{name}.png" for name in ("home", "energy", "travel", "vehicles", "pantry", "environment")}
 
 
 def check():

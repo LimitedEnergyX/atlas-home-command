@@ -1,7 +1,7 @@
 "use strict";
 
 const savedProfile = localStorage.getItem("atlas-profile");
-const state = { status: null, energy: null, energyHistory: null, energyRange: "day", forecast: null, home: null, inventory: null, ids: null, pantry: null, travel: null, currentTripId: null, travelView: "overview", atlas: null, household: null, profile: ["alex", "sam"].includes(savedProfile) ? savedProfile : "alex", environmentHistory: null, environmentHistoryLoading: false, preview: "home", hvacDraft: null, agentHistory: [] };
+const state = { status: null, energy: null, energyHistory: null, energyRange: "day", forecast: null, home: null, inventory: null, ids: null, pantry: null, travel: null, argo: null, currentAssetId: "vehicle-athena", currentTripId: null, travelView: "overview", atlas: null, household: null, profile: ["alex", "sam"].includes(savedProfile) ? savedProfile : "alex", environmentHistory: null, environmentHistoryLoading: false, hvacDraft: null, agentHistory: [] };
 const externalDestinations = { chatgpt: "https://chatgpt.com/", utility: "https://example.invalid/utility" };
 const centralTimeZone = "America/Chicago";
 const tabs = [...document.querySelectorAll("[role='tab'][data-tab]")];
@@ -14,27 +14,12 @@ function setupResponsiveLayout() {
   mobileRail.addEventListener("change", syncRail);
   syncRail();
 
-  const homeHvac = document.getElementById("home-hvac");
-  const homeGrid = document.querySelector(".home-module-grid");
-  const homePreview = document.getElementById("home-preview");
-  const mobileHome = window.matchMedia("(max-width: 820px)");
-  const syncHome = () => {
-    // Move the same controls so reading and keyboard order follow the layout.
-    const anchor = mobileHome.matches ? homeGrid : homePreview;
-    if (homeHvac.parentElement !== anchor.parentElement) {
-      const focused = document.activeElement;
-      const restoreFocus = homeHvac.contains(focused);
-      anchor.before(homeHvac);
-      if (restoreFocus) focused.focus({ preventScroll: true });
-    }
-  };
-  mobileHome.addEventListener("change", syncHome);
-  syncHome();
 }
 setupResponsiveLayout();
 
 function activateTab(name, focus = false, updateHash = true) {
   if (name === "health") name = "maintenance";
+  if (name === "argo") { location.replace("/argo/"); return; }
   const selected = tabs.find((tab) => tab.dataset.tab === name);
   if (!selected) return;
   if (name === "travel" && updateHash) {
@@ -54,10 +39,11 @@ function activateTab(name, focus = false, updateHash = true) {
   if (name === "pantry") renderPantryPage();
   if (name === "travel") renderTravelPage();
   if (name === "systems") renderEntityInventory();
-  if (name === "energy") loadEnergyHistory(state.energyRange);
+  if (name === "energy") window.AtlasEnergy.open(updateHash);
   if (name === "notifications") loadHousehold(false);
   if (name === "agents") renderAgents();
   if (name === "maintenance") window.AtlasMaintenance?.load();
+  if (name === "calendar") window.AtlasCalendar?.load();
   if (name === "security") renderSecurityPage();
   if (name === "environment") {
     renderEnvironmentPage();
@@ -84,17 +70,7 @@ for (const tab of tabs) {
 }
 
 for (const trigger of document.querySelectorAll("[data-tab-target]")) {
-  const homeSelector = trigger.closest(".home-module-grid");
-  trigger.addEventListener("click", (event) => {
-    if (homeSelector && trigger.dataset.tabTarget === "agents") activateTab("agents", true);
-    else if (homeSelector && event.detail >= 2) activateTab(trigger.dataset.tabTarget, true);
-    else if (homeSelector && trigger.dataset.tabTarget !== "notifications") selectHomePreview(trigger.dataset.tabTarget);
-    else activateTab(trigger.dataset.tabTarget, true);
-  });
-  if (homeSelector) trigger.addEventListener("dblclick", () => {
-    // Direct navigation must not depend on preview data being present or loaded.
-    if (location.hash !== `#${trigger.dataset.tabTarget}`) activateTab(trigger.dataset.tabTarget, true);
-  });
+  trigger.addEventListener("click", () => activateTab(trigger.dataset.tabTarget, true));
 }
 
 function updateClock() {
@@ -108,24 +84,31 @@ function updateClock() {
 }
 
 function humanTime(value) {
-  if (!value) return "N/A";
+  if (!value) return "—";
   const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? "N/A" : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+  return Number.isNaN(date.valueOf()) ? "—" : date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
 }
 
-function safeText(value, fallback = "N/A") {
+function safeText(value, fallback = "—") {
   return value === undefined || value === null || value === "" ? fallback : String(value);
 }
 
 function formatNumber(value, suffix = "", digits = 1) {
-  if (value === undefined || value === null || value === "") return "N/A";
+  if (value === undefined || value === null || value === "") return "—";
   const number = Number(value);
-  return Number.isFinite(number) ? `${number.toFixed(digits)}${suffix}` : "N/A";
+  return Number.isFinite(number) ? `${number.toFixed(digits)}${suffix}` : "—";
 }
 
 function serviceById(id) {
   return state.status?.services?.find((item) => item.id === id);
 }
+
+function argoDate(value) {
+  if (!value) return "Not Recorded";
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.valueOf()) ? value : date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
 
 function householdUrl(port, path = "/") {
   return `${location.protocol}//${location.hostname}:${port}${path}`;
@@ -139,42 +122,6 @@ function configureGalleyQuestLinks() {
   }
 }
 
-const previewMeta = {
-  home: ["VESTA · HOME", "Household Controls", "Common household actions are one touch away.", "systems", "Review System Issue"],
-  energy: ["SOL · ENERGY", "Live Energy Highlights", "Current Powerwall flow and today's verified household energy totals.", "energy", "Open Full Energy"],
-  environment: ["AEOLUS · ENVIRONMENT", "Climate And Air", "", "environment", "Open Environment"],
-  security: ["TITAN · SECURITY", "Security Controls", "Cyber monitoring and vacation-only secondary intrusion detection.", "security", "Open Full Security"],
-  pantry: ["DEMETER · PANTRY", "Pantry Highlights", "Current GalleyQuest availability while inventory and ordering data are integrated.", "pantry", "Open Full Pantry"],
-  travel: ["ORACLE · TRAVEL", "Upcoming Trips", "", "travel", "Open Full Travel"],
-  maintenance: ["VULCAN · MAINTENANCE", "Service & Upkeep", "Household service schedules and completed work.", "maintenance", "Open Maintenance"],
-  systems: ["ATHENA · SYSTEMS", "Systems Highlights", "A concise view of local services, containers, and deterministic controls.", "systems", "Open Full Systems"],
-  agents: ["OLYMPUS · AGENTS", "Agent Highlights", "Availability across Atlas model providers and the local orchestration layer.", "agents", "Open Agents / Work"],
-};
-
-function setPreviewCards(cards) {
-  const buttons = Array.from(document.querySelectorAll("#home-preview .preview-grid > .preview-card"));
-  buttons.forEach((button, index) => {
-    const card = cards[index];
-    button.hidden = !card;
-    button.classList.remove("cyber-summary-card", "security-cyber-card");
-    if (!card) return;
-    const number = index + 1;
-    const image = button.querySelector(".preview-card-image");
-    document.getElementById(`preview-label-${number}`).textContent = titleCase(card[0]);
-    document.getElementById(`preview-value-${number}`).textContent = card[1];
-    document.getElementById(`preview-note-${number}`).textContent = titleCase(card[2]);
-    button.dataset.previewAction = card[3] || state.preview;
-    button.classList.remove("camera-preview-card", "has-camera-still", "environment-summary-card", "cyber-summary-card", "pantry-summary-card");
-    button.classList.toggle("environment-summary-card", state.preview === "home" && card[3] === "environment");
-    button.classList.toggle("cyber-summary-card", state.preview === "home" && card[3] === "security");
-    button.classList.toggle("cyber-partial", state.cyber?.status !== "current" || !state.cyber?.fresh);
-    button.classList.toggle("pantry-summary-card", state.preview === "home" && card[3] === "galleyquest");
-    delete button.dataset.cameraPreview;
-    image.hidden = true;
-    image.alt = "";
-    image.removeAttribute("src");
-  });
-}
 
 function pantryStatusCopy() {
   const pantry = state.pantry;
@@ -189,37 +136,43 @@ function pantryStatusCopy() {
 }
 
 function pantryMissingIngredientsCopy() {
-  if (!state.pantry || state.pantry.status !== "healthy") return "N/A";
+  if (!state.pantry || state.pantry.status !== "healthy") return "—";
   const missing = Math.max(0, Number(state.pantry.missing_ingredients) || 0);
   return `${missing} Missing Ingredient${missing === 1 ? "" : "s"}`;
 }
 
 function pantryStaplesSummary() {
   const staples = Array.isArray(state.pantry?.staples) ? state.pantry.staples : [];
-  if (state.pantry?.status !== "healthy" || !staples.length) return ["Staples On Hand", "N/A", "Household Basics"];
+  if (state.pantry?.status !== "healthy" || !staples.length) return ["Staples On Hand", "—", "Household Basics"];
   const onHand = staples.filter((item) => ["OK", "LOW"].includes(String(item.status).toUpperCase())).length;
   return ["Staples On Hand", `${onHand} / ${staples.length}`, "Household Basics"];
 }
 
-function homeCards() {
-  const climate = state.home?.climate || {};
-  const energy = state.energy || {};
-  const current = formatNumber(climate.current_temperature, climate.unit || "°F", 1);
-  const target = formatNumber(climate.target_temperature, climate.unit || "°F", 0);
-  const environment = homeEnvironmentSummary();
-  const cyber = state.cyber;
-  const staples = pantryStaplesSummary();
-  return [
-    ["Environment", environment[0], environment[1], "environment"],
-    ["HVAC", current, target === "N/A" ? "Open temperature controls" : `${safeText(climate.hvac_action, climate.state)} · set to ${target}`, "hvac"],
-    ["Energy", formatNumber(energy.battery_pct, "%", 0), energy.status === "healthy" ? `${formatNumber(energy.solar_kw, " kW", 1)} ${energy.recorded_date ? "recorded solar" : "solar now"}` : "Solar and battery", "energy"],
-    ["Cyber Health", cyber?.fresh ? `${cyber.summary.passed} / ${cyber.summary.total}` : "N/A", cyberLabel(cyber), "security"],
-    [staples[0], staples[1], staples[2], "galleyquest"],
-  ];
-}
 
 function titleCase(value) {
   return safeText(value, "").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function displayName(value, fallback = "—") {
+  const raw = safeText(value, fallback).trim();
+  const aliases = {
+    homeassistant: "Home Assistant",
+    influxdb: "InfluxDB",
+    "open webui": "Open WebUI",
+    searxng: "SearXNG",
+    ntfy: "Ntfy",
+    ollama: "Ollama",
+    grafana: "Grafana",
+    powerwall: "Powerwall",
+  };
+  const normalized = raw.replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  const alias = aliases[normalized.toLowerCase()];
+  if (alias) return alias;
+  return normalized.split(" ").map((word) => {
+    if (!word) return word;
+    if (/^[A-Z0-9]{2,}$/.test(word) || /[A-Z]/.test(word.slice(1))) return word;
+    return `${word[0].toUpperCase()}${word.slice(1)}`;
+  }).join(" ");
 }
 
 function currentProfile() {
@@ -288,8 +241,8 @@ function renderProfile() {
 
 function quickLightItems() {
   const items = state.inventory?.groups?.home_controls || [];
-  const priority = ["light.driveway_light", "light.main_hall_light", "light.entry_light_left", "light.entry_light_right", "switch.desk_plug_sams_light", "switch.desk_plug_alexs_light"];
-  return items.sort((left, right) => {
+  const priority = ["light.driveway_light", "light.main_hall_light", "light.entry_light_left", "light.entry_light_right"];
+  return [...items].sort((left, right) => {
     const leftIndex = priority.indexOf(left.entity_id);
     const rightIndex = priority.indexOf(right.entity_id);
     return (leftIndex < 0 ? 99 : leftIndex) - (rightIndex < 0 ? 99 : rightIndex) || left.name.localeCompare(right.name);
@@ -302,8 +255,6 @@ function quickLightName(item) {
     "light.main_hall_light": "Main Hall",
     "light.entry_light_left": "Porch Left",
     "light.entry_light_right": "Porch Right",
-    "switch.desk_plug_sams_light": "Sam’s Light",
-    "switch.desk_plug_alexs_light": "Alex’s Light",
   };
   return names[item.entity_id] || safeText(item.name, "Household Light");
 }
@@ -410,7 +361,6 @@ function currentHealthScores() {
 }
 
 function cyberLabel(cyber) {
-  if (cyber?.demo) return "Illustrative Protection Checks";
   if (!cyber?.fresh) return cyber?.status === "stale" ? "Collector Is Stale" : "Awaiting Collector";
   return {current:"Host Checks Current", partial:"Telemetry Incomplete", attention:"Review Needed"}[cyber.status] || "Unknown";
 }
@@ -502,9 +452,9 @@ async function updateHouseholdMessage(messageId, operation) {
 function renderAgents() {
   const cloudProviders = ["openai", "anthropic", "xai"].map((name) => state.atlas?.providers?.[name]).filter(Boolean);
   const configured = cloudProviders.filter((provider) => provider.available).length;
-  document.getElementById("provider-count").textContent = state.atlas?.demo ? `${configured} of 3 Example Cloud Providers` : cloudProviders.length ? `${configured} of 3 Cloud APIs Configured` : "Provider Status Unavailable";
+  document.getElementById("provider-count").textContent = cloudProviders.length ? `${configured} of 3 Cloud APIs Configured` : "Provider Status Unavailable";
   const local = state.atlas?.providers?.ollama;
-  document.getElementById("local-provider-name").textContent = state.atlas?.demo ? "Hermes · Illustrative Local Provider" : local?.available ? "Hermes · Local" : "Hermes · Local Unavailable";
+  document.getElementById("local-provider-name").textContent = local?.available ? "Hermes · Local" : "Hermes · Local Unavailable";
 }
 
 function agentAnswerPresentation(content) {
@@ -619,7 +569,7 @@ function renderPantryStaples(values) {
     const name = document.createElement("span");
     const stateLabel = document.createElement("strong");
     item.className = `pantry-staple is-${status.toLowerCase()}`;
-    name.textContent = safeText(staple.name, "Staple");
+    name.textContent = displayName(staple.name, "Staple");
     stateLabel.textContent = labels[status] || "Unknown";
     item.append(name, stateLabel);
     return item;
@@ -631,7 +581,7 @@ function renderPantryPage() {
   if (!pantry || pantry.status !== "healthy") {
     for (const id of ["pantry-missing-count", "pantry-cart-count", "pantry-meal-count", "pantry-staple-count"]) {
       const element = document.getElementById(id);
-      if (element) element.textContent = "N/A";
+      if (element) element.textContent = "—";
     }
     fillPantryChips("pantry-missing-list", [], "Pantry Status Is Unavailable");
     fillPantryChips("pantry-cart-list", [], "Cart Status Is Unavailable");
@@ -652,7 +602,7 @@ function renderPantryPage() {
   document.getElementById("pantry-meal-count").textContent = String(meals);
   const weekNote = document.getElementById("pantry-meal-count").nextElementSibling;
   if (weekNote) weekNote.textContent = pantry.week_label || "This Week";
-  document.getElementById("pantry-staple-count").textContent = staples.length ? `${staplesOnHand} / ${staples.length}` : "N/A";
+  document.getElementById("pantry-staple-count").textContent = staples.length ? `${staplesOnHand} / ${staples.length}` : "—";
   document.getElementById("pantry-staple-note").textContent = staplesLow ? `${staplesLow} Running Low` : "Household Basics";
   fillPantryChips("pantry-missing-list", pantry.missing_items, "No Ingredients Missing for Planned Meals");
   fillPantryChips("pantry-cart-list", pantry.cart_items_preview, "No Items in the Grocery Cart");
@@ -671,7 +621,7 @@ function renderPantryPage() {
       const when = document.createElement("span");
       const name = document.createElement("strong");
       when.textContent = `${safeText(meal.day, "This Week")} · ${safeText(meal.slot, "Meal")}`;
-      name.textContent = safeText(meal.name, "Planned Meal");
+      name.textContent = displayName(meal.name, "Planned Meal");
       item.append(when, name);
       return item;
     }));
@@ -680,7 +630,7 @@ function renderPantryPage() {
 
 function formatMoney(value, currency = "USD") {
   const amount = Number(value);
-  if (!Number.isFinite(amount)) return "N/A";
+  if (!Number.isFinite(amount)) return "—";
   try {
     return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
   } catch (_error) {
@@ -705,7 +655,7 @@ function travelEmpty(copy) {
 }
 
 function travelEstimatedAmount(value, missingEstimates = 0) {
-  if (Number(missingEstimates || 0) > 0) return "N/A";
+  if (Number(missingEstimates || 0) > 0) return "—";
   return formatMoney(value || 0);
 }
 
@@ -748,6 +698,16 @@ function openTravelInfo(title, record) {
   if (record.session_status) details.append(Object.assign(document.createElement("p"), {
     textContent: `Session: ${titleCase(record.session_status)} · Checked: ${travelTimestamp(record.session_checked_at)}`,
   }));
+  for (const claim of record.claims || []) {
+    details.append(Object.assign(document.createElement("h3"), {textContent: `${claim.provider} · ${claim.reference}`}));
+    for (const text of [
+      `Status: ${titleCase(claim.status)} · Owner: ${claim.owner}`,
+      `Next Action: ${claim.next_action}`,
+      claim.deadline ? `${titleCase(claim.deadline_kind)} Date: ${travelDate(claim.deadline)}` : "Deadline: Not Confirmed",
+      claim.notes, `Evidence Checked: ${travelTimestamp(claim.verified_at)}`,
+      ...(claim.evidence || []),
+    ].filter(Boolean)) details.append(Object.assign(document.createElement("p"), {textContent: text}));
+  }
   document.getElementById("travel-info-dialog").showModal();
 }
 
@@ -755,7 +715,7 @@ function travelCosts(trips, kind) {
   const totals = {}; const rewards = {}; let unknown = 0; let unknownMiles = 0;
   for (const trip of trips) {
     const costs = trip.costs;
-    if (!costs) return "N/A";
+    if (!costs) return "—";
     for (const [currency, amount] of Object.entries(costs[kind] || {})) totals[currency] = (totals[currency] || 0) + amount;
     unknown += costs[kind === "paid" ? "unknown_paid" : "unknown_later"] || 0;
     if (kind === "paid") {
@@ -763,11 +723,11 @@ function travelCosts(trips, kind) {
       for (const [program, amount] of Object.entries(costs.miles || {})) rewards[program] = (rewards[program] || 0) + amount;
     }
   }
-  if (kind === "later" && unknown) return "N/A";
+  if (kind === "later" && unknown) return "—";
   const parts = Object.entries(totals).map(([currency, amount]) => formatMoney(amount, currency));
   parts.push(...Object.entries(rewards).map(([program, amount]) => `${amount.toLocaleString()} ${program}`));
-  if (unknownMiles) parts.push("MileagePlus Miles");
-  if (unknown && !parts.length) return "N/A";
+  if (unknownMiles) parts.push("Reward Miles (Quantity Unrecorded)");
+  if (unknown && !parts.length) return "—";
   return parts.join(" + ") || formatMoney(0);
 }
 
@@ -779,13 +739,22 @@ function travelOperation(title, lines, record = {}) {
   return card;
 }
 
+function travelCaseGroups(cases) {
+  // No household-specific claim identifiers are bundled. Preserve distinct cases.
+  return cases;
+}
+
 function renderTravelOperations() {
   const travel = state.travel || {};
-  const items = travel.attention || [];
+  const cases = travelCaseGroups(travel.cases || []);
+  const knownIds = new Set((travel.cases || []).map(item => item.id));
+  const items = [...(travel.attention || []).filter(item => !knownIds.has(item.case_id)),
+    ...cases.filter(item => item.status !== "closed").map(item => ({...item, detail: item.next_action}))]
+    .sort((a, b) => (a.deadline || "9999-12-31").localeCompare(b.deadline || "9999-12-31"));
   document.getElementById("travel-attention-list").replaceChildren(...(items.length ? items.map(item => {
     const card = travelOperation(item.title, [item.detail, `Owner: ${item.owner}`,
       item.deadline ? `${titleCase(item.deadline_kind || "Review")} Date: ${travelDate(item.deadline)}` : ""], item);
-    if (item.trip_id) {
+    if (item.trip_id && [...(travel.trips || []), ...(travel.past_trips || [])].some(trip => trip.id === item.trip_id)) {
       const link = document.createElement("a"); link.href = `#travel/trip/${encodeURIComponent(item.trip_id)}`; link.textContent = "Open Trip →"; card.append(link);
     }
     return card;
@@ -795,12 +764,12 @@ function renderTravelOperations() {
     const link = document.createElement("a"); link.href = `#travel/trip/${encodeURIComponent(trip.id)}`;
     link.textContent = `${trip.title} · ${travelDateRange(trip)} →`; return link;
   }));
-  const cases = travel.cases || [];
-  document.getElementById("travel-case-list").replaceChildren(...(cases.length ? cases.map(item => travelOperation(item.title, [
+  const closedCases = cases.filter(item => item.status === "closed");
+  document.getElementById("travel-case-list").replaceChildren(...(closedCases.length ? closedCases.map(item => travelOperation(item.title, [
     `${item.provider} · ${item.reference || "Reference Not Recorded"} · ${titleCase(item.status)}`,
     `Owner: ${item.owner}`, `Next Action: ${item.next_action}`,
     item.deadline ? `${titleCase(item.deadline_kind)} Date: ${travelDate(item.deadline)}` : "Deadline: Not Confirmed",
-  ], item)) : [travelEmpty("No Cases Recorded")]));
+  ], item)) : [travelEmpty(cases.length ? "Active Incidents Appear In Needs Attention Above" : "No Cases Recorded")]));
   const monitors = travel.monitor || [];
   document.getElementById("travel-monitor-list").replaceChildren(...(monitors.length ? monitors.map(item => travelOperation("Weekly Travel Review", [
     `${item.schedule} · ${item.timezone}`, `Configuration: ${titleCase(item.configuration_status || "Unknown")}`,
@@ -828,33 +797,14 @@ function travelCountdown(trip, now = Date.now()) {
   return {label, text: `Departs in ${duration}`};
 }
 
-function renderHomeTravelTrips() {
-  const trips = [...(state.travel?.trips || [])].sort((a, b) => String(a.start_date).localeCompare(String(b.start_date)));
-  const host = document.getElementById("home-travel-trips");
-  host.replaceChildren(...(trips.length ? trips.map(trip => {
-    const countdown = travelCountdown(trip);
-    const tile = document.createElement("button"); tile.type = "button"; tile.className = "home-trip-tile";
-    const heading = document.createElement("strong"); heading.textContent = countdown.label;
-    const time = document.createElement("span"); time.textContent = countdown.text;
-    const checks = (trip.departure?.checks || []).filter(check => check.status !== "not-needed");
-    const ready = (trip.operator_review?.current && Date.parse(trip.operator_review.valid_until) >= Date.now()) || (trip.departure?.ready === true && checks.length > 0 && checks.every(check =>
-      check.status === "verified" && check.evidence?.length && Date.parse(check.verified_at) <= Date.now() && Date.parse(check.valid_until) >= Date.now()));
-    const status = document.createElement("small"); status.className = ready ? "is-ready" : "needs-review";
-    status.textContent = ready ? "✓ Good To Go" : "Review & Confirm →";
-    tile.append(heading, time, status);
-    tile.addEventListener("click", () => { activateTab("travel", false, false); openTravelTrip(trip.id); });
-    tile.setAttribute("aria-label", `${countdown.label}. ${countdown.text}. ${status.textContent}. Open Trip.`);
-    return tile;
-  }) : [travelEmpty(state.travel?.status === "healthy" ? "No Upcoming Trips" : "Travel Status Unavailable")]));
-}
 
 function renderTravelPage() {
   const travel = state.travel;
   const summary = travel?.summary || {};
-  document.getElementById("travel-upcoming-count").textContent = travel?.status === "healthy" ? String(summary.upcoming || 0) : "N/A";
-  document.getElementById("travel-ready-count").textContent = travel?.status === "healthy" ? `${summary.ready || 0} / ${summary.upcoming || 0}` : "N/A";
-  document.getElementById("travel-charged-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "paid") : "N/A";
-  document.getElementById("travel-later-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "later") : "N/A";
+  document.getElementById("travel-upcoming-count").textContent = travel?.status === "healthy" ? String(summary.upcoming || 0) : "—";
+  document.getElementById("travel-ready-count").textContent = travel?.status === "healthy" ? `${summary.ready || 0} / ${summary.upcoming || 0}` : "—";
+  document.getElementById("travel-charged-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "paid") : "—";
+  document.getElementById("travel-later-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "later") : "—";
   document.getElementById("travel-observed").textContent = travel?.status === "healthy" ? `Ledger Updated: ${travelTimestamp(travel.ledger_updated_at)}` : "Trip Ledger Unavailable";
   renderTravelOperations();
 
@@ -873,10 +823,10 @@ function renderTravelPage() {
       const title = document.createElement("strong");
       const tripType = document.createElement("b");
       const destination = document.createElement("small");
-      title.textContent = safeText(trip.title, "Planned Trip");
+      title.textContent = displayName(trip.title, "Planned Trip");
       tripType.className = `travel-trip-type is-${trip.trip_type || "unclassified"}`;
       tripType.textContent = titleCase(trip.trip_type || "unclassified");
-      destination.textContent = safeText(trip.destination, "Destination Pending");
+      destination.textContent = displayName(trip.destination, "Destination Pending");
       identity.append(title, tripType, destination);
       const dates = document.createElement("span");
       dates.className = "travel-trip-date";
@@ -962,7 +912,7 @@ async function saveTravelReview() {
       checks: [...document.querySelectorAll("#travel-review-checklist input:checked")].map(input => input.value),
     })});
     const data = await response.json(); if (!response.ok) throw new Error(data.error || "Could Not Save Review");
-    state.travel = data.travel; renderTravelPage(); renderHomeTravelTrips();
+    state.travel = data.travel; renderTravelPage();
     document.getElementById("travel-review-dialog").close();
   } catch (error) { result.textContent = error.message; button.disabled = false; }
 }
@@ -984,11 +934,11 @@ function renderTravelDetail(tripId) {
   tripType.textContent = titleCase(trip.trip_type || "unclassified");
   document.getElementById("travel-detail-verified").textContent = `${trip.readiness?.verified || 0} / ${trip.readiness?.required || 0}`;
   document.getElementById("travel-detail-charged").textContent = travelCosts([trip], "paid");
-  document.getElementById("travel-detail-charged-note").textContent = trip.costs?.unknown_paid ? "Fees N/A" : "Paid";
+  document.getElementById("travel-detail-charged-note").textContent = trip.costs?.unknown_paid ? "Fees —" : "Paid";
   document.getElementById("travel-cost-help").replaceChildren(travelEvidence({title: "Paid Amounts", notes: (trip.charges || []).filter(charge => ["paid", "charged"].includes(charge.status)).map(charge =>
     charge.redemption ? `${charge.merchant}: ${charge.miles == null ? "Mileage quantity not recorded" : `${charge.miles} miles`}; ${charge.cash_fees == null ? "cash fees not recorded" : `${formatMoney(charge.cash_fees, charge.currency)} cash fees`}.` : `${charge.merchant}: ${charge.amount_known ? formatMoney(charge.amount, charge.currency) : "amount not recorded"}.`).join("\n")}));
   document.getElementById("travel-detail-later").textContent = travelCosts([trip], "later");
-  document.getElementById("travel-detail-card").textContent = trip.financials?.card_label || (trip.financials?.preferred_card_used ? "Configured card" : "Review Card");
+  document.getElementById("travel-detail-card").textContent = trip.financials?.card_label || (trip.financials?.preferred_card_used ? "Configured Card" : "Review Card");
   const checks = trip.departure?.checks || [];
   const good = trip.departure?.good_to_go || trip.departure?.ready;
   document.getElementById("travel-departure-list").replaceChildren(
@@ -998,9 +948,9 @@ function renderTravelDetail(tripId) {
   document.getElementById("travel-review-open").textContent = good ? "Review Again" : "Review & Confirm";
   const coverages = trip.coverage || [];
   document.getElementById("travel-coverage-list").replaceChildren(...(coverages.length ? coverages.map(coverage => travelOperation(
-    coverage.name || "Coverage", [titleCase(coverage.status || "Unverified"), coverage.effective_from ? `${travelDate(coverage.effective_from)} – ${travelDate(coverage.effective_to)}` : "Dates N/A"], coverage)) : [
+    coverage.name || "Coverage", [coverage.status === "reported" ? "Owner Reported" : titleCase(coverage.status || "Unverified"), coverage.effective_from ? `${travelDate(coverage.effective_from)} – ${travelDate(coverage.effective_to)}` : "Policy Details Pending"], coverage)) : [
       Object.assign(document.createElement("strong"), {textContent: "Not Verified"}),
-      travelEvidence({title: "Coverage", notes: "Payment with Configured card does not establish insurance eligibility. Coverage scope and effective dates still need verification."})]));
+      travelEvidence({title: "Coverage", notes: "Card payment does not establish insurance eligibility. Coverage scope and effective dates still need verification."})]));
 
   const reservationHost = document.getElementById("travel-reservation-list");
   const reservations = Array.isArray(trip.reservations) ? trip.reservations : [];
@@ -1012,7 +962,7 @@ function renderTravelDetail(tripId) {
     const status = document.createElement("b"); status.textContent = reservation.status === "not-needed" ? "Not Needed" : confirmed ? "✓ Confirmed" : "Review";
     const provider = document.createElement("span"); provider.textContent = reservation.provider;
     const note = document.createElement("small");
-    note.textContent = reservation.status === "not-needed" ? "" : reservation.confirmation ? `# ${reservation.confirmation}` : "Confirmation N/A";
+    note.textContent = reservation.status === "not-needed" ? "" : reservation.confirmation ? `# ${reservation.confirmation}` : "Confirmation —";
     item.append(title, status, provider, note, travelEvidence({...reservation, title: `${reservation.type} · ${reservation.provider}`}));
     return item;
   }) : [travelEmpty("No reservation requirements have been entered for this trip.")]));
@@ -1024,11 +974,11 @@ function renderTravelDetail(tripId) {
     item.className = "travel-charge";
     const merchant = document.createElement("strong"); merchant.textContent = charge.merchant;
     const amount = document.createElement("b");
-    amount.textContent = charge.redemption ? (charge.miles == null ? "MileagePlus Miles" : `${Number(charge.miles).toLocaleString()} mi`) : (charge.amount_known
+    amount.textContent = charge.redemption ? (charge.miles == null ? "Reward Miles (Quantity Unrecorded)" : `${Number(charge.miles).toLocaleString()} mi`) : (charge.amount_known
       ? formatMoney(charge.amount, charge.currency)
       : (["paid", "charged", "posted", "refunded"].includes(charge.status) ? "Amount Unavailable" : "Estimate Needed"));
     const category = document.createElement("span"); category.textContent = `${charge.category} · ${titleCase(charge.status)}`;
-    const note = document.createElement("small"); note.textContent = charge.redemption ? `Fees ${charge.cash_fees == null ? "N/A" : formatMoney(charge.cash_fees, charge.currency)}` : charge.card;
+    const note = document.createElement("small"); note.textContent = charge.redemption ? `Fees ${charge.cash_fees == null ? "—" : formatMoney(charge.cash_fees, charge.currency)}` : charge.card;
     item.append(merchant, amount, category, note, travelEvidence({...charge, notes: `${charge.timing} · ${charge.card}${charge.redemption ? ` · ${charge.miles == null ? "Mileage quantity not recorded" : `${charge.miles} miles`}. ${charge.cash_fees == null ? "Cash fees not recorded." : ""}` : ""}`}));
     return item;
   }) : [travelEmpty("No trip charges have been recorded yet.")]));
@@ -1047,6 +997,10 @@ function renderTravelDetail(tripId) {
   const expenseNotes = document.getElementById("travel-expense-notes");
   expenseNotes.textContent = expenses.notes || "";
   expenseNotes.hidden = !expenses.notes;
+  const allowance = expenses.per_diem;
+  document.getElementById("travel-per-diem-card").hidden = !allowance;
+  document.getElementById("travel-per-diem-total").textContent = allowance ? formatMoney(allowance.total, expenses.currency || "USD") : "";
+  document.getElementById("travel-per-diem-detail").textContent = allowance ? `${formatMoney(allowance.daily_rate, expenses.currency || "USD")} × ${allowance.days} Days · ${allowance.date_label} · ${allowance.status}` : "";
 
   const loungeHost = document.getElementById("travel-lounge-list");
   const flightSegments = reservations.flatMap((reservation) => Array.isArray(reservation.segments) ? reservation.segments : []);
@@ -1068,17 +1022,18 @@ function renderTravelDetail(tripId) {
     else loungeList.append(...lounges.map((lounge) => {
       const loungeCard = document.createElement("section");
       loungeCard.className = `travel-lounge is-${lounge.access === "unavailable" ? "unavailable" : "verify"}`;
-      const name = document.createElement("strong"); name.textContent = lounge.name;
-      const badge = document.createElement("b"); badge.textContent = lounge.access === "unavailable" ? "✕ Unavailable" : "Check Access";
+      const name = document.createElement("strong"); name.textContent = displayName(lounge.name, "Lounge");
+      const badge = document.createElement("b"); badge.textContent = lounge.access === "unavailable" ? "✕ Unavailable" : lounge.access === "conditional" ? "Eligible With Reserve" : "Check Access";
       const location = document.createElement("span"); location.textContent = lounge.terminal;
-      const hours = !lounge.hours || /verify|pending|unknown/i.test(lounge.hours) ? "Hours N/A" : lounge.hours;
-      const basis = document.createElement("small"); basis.textContent = lounge.network === "USO" ? hours : `${trip.financials?.card_label || "Configured card"} · ${hours}`;
-      loungeCard.append(name, badge, location, basis, travelEvidence({...lounge, detail: `Access is conditional on card, fare, remaining visits, operating hours and guest rules. Flight: ${segment.flight_number} · ${segment.cabin} · ${segment.fare}`}));
+      const hours = !lounge.hours || /verify|pending|unknown/i.test(lounge.hours) ? "Hours —" : lounge.hours;
+      const basis = document.createElement("small"); basis.textContent = lounge.network === "USO" ? hours : `${lounge.basis || 'Access Needs Verification'} · ${hours}`;
+      const plan = document.createElement("p"); plan.textContent = lounge.basis;
+      loungeCard.append(name, badge, location, basis, plan, travelEvidence({...lounge, detail: `${lounge.guests}. Access is conditional on card, fare, remaining visits, operating hours, and capacity. Flight: ${segment.flight_number} · ${segment.cabin} · ${segment.fare}`}));
       return loungeCard;
     }));
     item.append(header, loungeList);
     return item;
-  }) : [travelEmpty("Flight segments will show lounge options after the itinerary and card access are reviewed.")]));
+  }) : [travelEmpty("Flight segments will show Delta Sky Club, Centurion, Sidecar, Escape Lounge, and USO options after the itinerary and card tier are verified.")]));
 
   const notes = document.getElementById("travel-notes");
   notes.hidden = !trip.notes;
@@ -1102,8 +1057,8 @@ function renderTravelLoyaltyPage() {
   document.getElementById("loyalty-program-count").textContent = String(summary.programs || 0);
   document.getElementById("loyalty-lounge-pass-count").textContent = summary.lounge_passes_remaining != null && Number.isFinite(Number(summary.lounge_passes_remaining))
     ? String(summary.lounge_passes_remaining)
-    : "N/A";
-  document.getElementById("loyalty-status-count").textContent = `${summary.status_examples ?? summary.statuses_verified ?? 0} / ${summary.programs || 0}`;
+    : "—";
+  document.getElementById("loyalty-status-count").textContent = `${summary.statuses_verified || 0} / ${summary.programs || 0}`;
   document.getElementById("loyalty-progress-count").textContent = String(summary.programs_with_progress || 0);
   document.getElementById("travel-loyalty-observed").textContent = "Balances Reflect Each Provider’s Last Recorded Check";
 
@@ -1142,7 +1097,7 @@ function renderTravelLoyaltyPage() {
       return row;
     }) : [travelEmpty(program.notes || "Qualification progress was not displayed by this provider.")]));
     const benefits = document.createElement("p"); benefits.className = "travel-loyalty-benefits"; benefits.textContent = (program.benefits || []).join(" · ") || "Benefits are not yet recorded.";
-    const verified = document.createElement("small"); verified.className = "travel-loyalty-verified"; verified.textContent = `${state.travel?.demo ? "Example Updated" : "Verified"}: ${travelTimestamp(program.verified_at)}`;
+    const verified = document.createElement("small"); verified.className = "travel-loyalty-verified"; verified.textContent = `Verified: ${travelTimestamp(program.verified_at)}`;
     card.append(header, ...(balance ? [balance] : []), progress, benefits, verified, travelEvidence(program));
     return card;
   }) : [travelEmpty("No loyalty programs have been recorded yet.")]));
@@ -1152,129 +1107,21 @@ function energyCards() {
   const energy = state.energy;
   if (!energy || energy.status !== "healthy") {
     return [
-      ["Solar Production", "N/A", "Powerwall Data Unavailable"],
-      ["Home Demand", "N/A", "Awaiting Local Service"],
-      ["Battery", "N/A", "State Of Charge Unavailable"],
-      ["Grid", "N/A", "Flow Unavailable"],
+      ["Solar Production", "—", "Powerwall Data Unavailable"],
+      ["House Load", "—", "Awaiting Local Service"],
+      ["Battery", "—", "State Of Charge Unavailable"],
+      ["Grid", "—", "Flow Unavailable"],
     ];
   }
   const gridValue = Math.abs(Number(energy.grid_kw));
   return [
-    ["Solar Production", formatNumber(energy.solar_kw, " kW", 2), `${formatNumber(energy.today?.solar_kwh, " kWh")} Generated ${energy.recorded_date ? energy.recorded_date : "Today"}`],
-    ["Home Demand", formatNumber(energy.home_kw, " kW", 2), `${formatNumber(energy.today?.home_kwh, " kWh")} Used ${energy.recorded_date ? energy.recorded_date : "Today"}`],
+    ["Solar Production", formatNumber(energy.solar_kw, " kW", 2), `${formatNumber(energy.today?.solar_kwh, " kWh")} Generated Today`],
+    ["House Load", formatNumber(energy.home_kw, " kW", 2), `${formatNumber(energy.today?.home_kwh, " kWh")} Used Today · Athena May Be Included`],
     ["Battery", formatNumber(energy.battery_pct, "%"), `${energy.charging ? "Charging" : "Holding"} · ${formatNumber(energy.reserve_pct, "%")} Reserve`],
     ["Grid", formatNumber(gridValue, " kW", 2), `${titleCase(safeText(energy.grid_direction))} · Grid ${energy.grid_up ? "Online" : "Offline"}`],
   ];
 }
 
-function updateSecurityHealth() {
-  const status = document.getElementById("security-health-status");
-  const detail = document.getElementById("security-health-detail");
-  if (!state.status) {
-    status.textContent = "Checking Atlas";
-    detail.textContent = "Awaiting live status";
-    return;
-  }
-
-  const summary = state.status.summary || {};
-  const services = state.status.services || [];
-  const offline = services.filter((service) => service.status !== "healthy").length;
-  if (offline > 0) status.textContent = `${offline} system${offline === 1 ? "" : "s"} offline`;
-  else if (state.status.status === "healthy") status.textContent = "All Systems Operational and Healthy";
-  else status.textContent = "Atlas Is Online With Degraded Health";
-
-  const healthy = safeText(summary.services_healthy, 0);
-  const total = safeText(summary.services_total, services.length);
-  const controls = `${safeText(summary.controls_resolved, 0)}/${safeText(summary.controls_total, 0)} safety controls`;
-  detail.textContent = offline > 0 ? `${healthy}/${total} services responding · review Systems` : `${healthy}/${total} services · ${controls}`;
-}
-
-function renderPreview(name) {
-  const meta = previewMeta[name] || previewMeta.home;
-  state.preview = name in previewMeta ? name : "home";
-  const preview = document.getElementById("home-preview");
-  preview.dataset.preview = state.preview;
-  document.getElementById("home-travel-trips").hidden = state.preview !== "travel";
-  document.getElementById("preview-title").textContent = meta[0];
-  document.getElementById("preview-summary").textContent = meta[2];
-  const open = document.getElementById("open-preview");
-  open.dataset.fullTab = meta[3];
-  open.firstChild.textContent = `${meta[4]} `;
-
-  const summary = state.status?.summary || {};
-  const failures = state.status?.failures || [];
-  const actionableFailures = failures.filter((failure) => failure.status !== "monitoring");
-  open.hidden = state.preview === "home" && (!state.status || actionableFailures.length === 0);
-  if (state.preview === "home") setPreviewCards(homeCards());
-  else if (state.preview === "energy") setPreviewCards(energyCards());
-  else if (state.preview === "environment") {
-    const current = state.forecast?.status === "healthy" ? state.forecast.current || {} : {};
-    const indoor = homeEnvironmentSummary();
-    setPreviewCards([
-      ["Indoors", indoor[0], "Temperature Range", "environment"],
-      ["Outside", formatNumber(current.temp_f, "°F", 0), safeText(current.desc, "Weather unavailable"), "environment"],
-      ["Indoor AQI", readingText(environmentReading("indoor-aqi"), 0), "Air Quality", "environment"],
-      ["Humidity Outside", formatNumber(current.humidity, "%", 0), "Relative Humidity", "environment"],
-    ]);
-  }
-  else if (state.preview === "systems") setPreviewCards([
-    ["Services", `${safeText(summary.services_healthy, 0)}/${safeText(summary.services_total, 0)}`, "Local endpoints responding"],
-    ["Containers", `${safeText(summary.containers_running, 0)}/${safeText(summary.containers_total, 0)}`, "Expected runtime online"],
-    ["Safety Controls", `${safeText(summary.controls_resolved, 0)}/${safeText(summary.controls_total, 0)}`, "Independent of LLM Availability"],
-    ["Active Findings", String(failures.length), failures.length ? "Review Required" : "No Current Atlas Findings"],
-  ]);
-  else if (state.preview === "security") {
-    const cyber = state.cyber;
-    const ids = state.ids || {};
-    setPreviewCards([
-      ["Vacation IDS", ids.armed ? "Armed" : "Disarmed", "Secondary household monitoring", "security"],
-      ["Host Protection", cyber?.fresh ? `${cyber.summary.passed} / ${cyber.summary.total}` : "N/A", cyberLabel(cyber), "security"],
-      ["High-Priority Events", cyber?.fresh ? String(cyber.summary.high) : "N/A", "Grouped · Past 24 Hours", "security"],
-      ["Network", "Deferred", "UniFi Planned", "security"],
-    ]);
-    updateSecurityHealth();
-  } else if (state.preview === "pantry") {
-    const pantry = state.pantry || {};
-    const staples = Array.isArray(pantry.staples) ? pantry.staples : [];
-    const staplesOnHand = staples.filter((item) => ["OK", "LOW"].includes(String(item.status).toUpperCase())).length;
-    setPreviewCards([
-      ["Ingredients Missing", String(pantry.missing_ingredients ?? "N/A"), "For Planned Meals Only", "galley-grocery"],
-      ["Items In Cart", String(pantry.cart_items ?? "N/A"), pantry.cart_status_label || "Current Grocery List", "galley-grocery"],
-      ["Meals Planned", String(pantry.meals_planned ?? "N/A"), "This Week", "galley-plan"],
-      ["Staples On Hand", staples.length ? `${staplesOnHand} / ${staples.length}` : "N/A", "Milk, eggs, bread, coffee, and more", "galley-stock"],
-    ]);
-  } else if (state.preview === "travel") {
-    setPreviewCards([]);
-    renderHomeTravelTrips();
-  } else if (state.preview === "agents") {
-    const cloudProviders = ["openai", "anthropic", "xai"].map((name) => state.atlas?.providers?.[name]).filter(Boolean);
-    const configured = cloudProviders.filter((provider) => provider.available).length;
-    setPreviewCards([
-      ["Cloud APIs configured", `${configured}/3`, "OpenAI, Claude, and Grok"],
-      ["Orchestrator", safeText(state.atlas?.status, "unknown"), "Local Atlas runtime"],
-      ["Ledger", state.atlas?.ledger?.healthy ? "healthy" : "unknown", "Durable local record"],
-      ["Authority", "Operator", "Write actions remain policy-gated"],
-    ]);
-  } else if (state.preview === "maintenance") {
-    const service = window.AtlasMaintenance?.snapshot?.summary;
-    setPreviewCards([
-      ["Overdue", service?.overdue ?? "N/A", "Recorded Service Tasks", "maintenance"],
-      ["Due Soon", service?.due_soon ?? "N/A", "Next 30 Days", "maintenance"],
-      ["Completed", service?.completed ?? "N/A", "Service History", "maintenance"],
-    ]);
-  } else setPreviewCards([]);
-}
-
-function selectHomePreview(name) {
-  if (name === "maintenance") window.AtlasMaintenance?.load().then(() => {
-    if (state.preview === "maintenance") renderPreview("maintenance");
-  });
-  if (state.preview === name && name !== "home") {
-    activateTab(name);
-    return;
-  }
-  renderPreview(name);
-}
 
 function statusClass(value) {
   if (["healthy", "running", "resolved", "current", "online"].includes(value)) return "healthy";
@@ -1289,7 +1136,7 @@ function statusItem(item, detail) {
   const title = document.createElement("b");
   const note = document.createElement("small");
   const badge = document.createElement("span");
-  title.textContent = safeText(item.id || item.item, "Unnamed control");
+  title.textContent = displayName(item.name || item.id || item.item, "Unnamed Control");
   note.textContent = safeText(detail);
   badge.textContent = safeText(item.status || item.state);
   badge.className = `state ${statusClass(item.status || item.state)}`;
@@ -1314,7 +1161,6 @@ function setOverall(status, message) {
 
 function render(data) {
   state.status = data;
-  updateSecurityHealth();
   const summary = data.summary || {};
   const failures = data.failures || [];
   const requiredSystemsOffline = (data.services || []).filter((service) => service.required && service.status !== "healthy").length;
@@ -1352,11 +1198,50 @@ function render(data) {
   fillList("service-list", data.services || [], (item) => item.http_status ? `HTTP ${item.http_status} · ${Math.round(item.latency_ms || 0)} ms` : item.error || "No response");
   fillList("container-list", data.containers || [], (item) => item.required ? "Required runtime" : "Rollback or optional runtime");
   fillList("control-list", data.health_controls?.items || [], (item) => item.detail || item.topic || "Health evidence");
-  renderPreview(state.preview);
   renderPantryPage();
 }
 
 function renderEnergyPage() {
+  const charge = state.energy?.vehicle_charge_snapshot;
+  window.AtlasEnergy?.renderChargingHistory(charge);
+  const chargeSection = document.getElementById("energy-athena-snapshot");
+  if (chargeSection) {
+    chargeSection.hidden = !charge;
+    document.getElementById("energy-athena-waiting").hidden = Boolean(charge);
+    if (charge) {
+      const observedAt = charge.timestamp || charge.checked_at;
+      const basic = charge.status === "periodic_sample";
+      const age = observedAt ? Date.now() - new Date(observedAt).getTime() : Infinity;
+      const saved = age > 45 * 60000 || charge.collection_status !== "Updated";
+      document.getElementById("energy-athena-observed").textContent = basic
+        ? `${charge.collection_status} · ${observedAt ? (saved ? "Last Reading: " : "Read: ") + new Date(observedAt).toLocaleString() : "Waiting For A Reading"}`
+        : `Snapshot: ${new Date(observedAt).toLocaleString()} · Not Live`;
+      const entries = [["Athena Battery", formatNumber(charge.battery_level, "%", 0)],
+        ["Charge Limit", formatNumber(charge.charge_limit_soc, "%", 0)],
+        ["Charging Power", formatNumber(charge.charger_power, " kW", 1)],
+        ["Rated Range", formatNumber(charge.battery_range, " mi", 0)]];
+      document.getElementById("energy-athena-readings").replaceChildren(...entries.map(([label,value]) => {
+        const card = document.createElement("article"); card.className = "metric-card";
+        const title = document.createElement("span"); title.textContent = label;
+        const reading = document.createElement("strong"); reading.textContent = value;
+        card.append(title,reading); return card;
+      }));
+      document.getElementById("energy-athena-state").textContent = `${charge.charging_state} · ${formatNumber(charge.charge_energy_added, " kWh", 2)} In Reported Session. ${basic ? (charge.automatic_collection ? "Checks Every 30 Minutes When Awake. No Wake Or Control Commands." : "Automatic Updates Paused. Controls Off.") : "Automatic Updates And Controls Are Off."}`;
+    }
+  }
+  const vehicleNote = document.getElementById("energy-vehicle-connection");
+  if (vehicleNote) {
+    const inventory = state.energy?.tesla_vehicles;
+    const names = (inventory?.vehicles || []).map(v => v.name).join(", ");
+    const observed = inventory?.observed_at ? ` Checked ${new Date(inventory.observed_at).toLocaleString()}.` : "";
+    vehicleNote.textContent = charge?.status === "periodic_sample"
+      ? "Basic Athena readings share the existing Tesla connection. Saved readings are timestamped; Tesla still controls Charge on Solar. No solar-source attribution is inferred."
+      : charge
+      ? "Athena charging-data access verified by a successful read. The displayed snapshot does not refresh automatically and is not used as historical energy or solar attribution. Tesla remains the charging controller."
+      : inventory?.status === "ready"
+      ? `Tesla Vehicle Access Verified: ${names || "No vehicles returned"}.${observed} Automatic vehicle collection is not configured. Tesla controls Charge on Solar.`
+      : "Tesla vehicle discovery has not been verified for this session. Live vehicle readings and commands remain disabled. Existing solar and Powerwall data are unaffected.";
+  }
   const cards = energyCards();
   const ids = ["solar", "home", "battery", "grid"];
   cards.forEach((card, index) => {
@@ -1364,11 +1249,25 @@ function renderEnergyPage() {
   });
   document.getElementById("energy-page-solar-note").textContent = cards[0][2];
   document.getElementById("energy-page-battery-note").textContent = cards[2][2];
-  document.getElementById("energy-page-grid-note").textContent = cards[3][2];
-  const homeDemandNote = document.getElementById("energy-page-home-note");
-  if (homeDemandNote) homeDemandNote.textContent = state.energy?.recorded_date ? "Recorded Household Load" : "Current Household Load";
+  const energyReady = state.energy?.status === "healthy";
+  const gridQuiet = energyReady && typeof state.energy.grid_kw === "number" && Number.isFinite(state.energy.grid_kw) && Math.abs(state.energy.grid_kw) < .05;
+  document.getElementById("energy-page-grid-note").textContent = gridQuiet ? "No Exchange · Grid Online" : cards[3][2];
   document.getElementById("energy-observed").textContent = state.energy?.polled_at ? `Updated ${humanTime(state.energy.polled_at)}` : "Local data unavailable";
-  if (state.energy?.recorded_date) document.getElementById("energy-observed").textContent = `Recorded ${state.energy.recorded_date} · Historical power snapshot`;
+  document.getElementById("energy-exterior-solar-flow").textContent = energyReady && typeof state.energy.solar_kw === "number" && Number.isFinite(state.energy.solar_kw)
+    ? `Solar Producing · ${formatNumber(state.energy.solar_kw, " kW", 2)}` : "Solar Reading Unavailable";
+  document.getElementById("energy-exterior-battery-flow").textContent = energyReady
+    ? `Powerwall · ${state.energy.charging ? "Charging" : "Not Charging"}` : "Powerwall Reading Unavailable";
+  document.getElementById("energy-exterior-athena-battery").textContent = charge ? `${formatNumber(charge.battery_level, "%", 0)} Battery` : "— Battery";
+  document.getElementById("energy-exterior-athena-range").textContent = charge ? `${formatNumber(charge.battery_range, " mi", 0)} Range` : "— Range";
+  document.getElementById("energy-exterior-athena-power").textContent = charge && typeof charge.charger_power === "number" && Number.isFinite(charge.charger_power)
+    ? `${formatNumber(charge.charger_power, " kW", 1)} At Last Check` : "— At Last Check";
+  document.getElementById("energy-exterior-athena-state").textContent = charge ? safeText(charge.charging_state, "State Unavailable") : "Reading Unavailable";
+  const chargeObserved = charge?.timestamp || charge?.checked_at;
+  const chargeDate = chargeObserved ? new Date(chargeObserved) : null;
+  const chargeTime = chargeDate && Number.isFinite(chargeDate.getTime()) ? chargeDate.toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : null;
+  document.getElementById("energy-exterior-athena-observed").textContent = chargeTime
+    ? `${charge?.collection_status === "Updated" ? "Checked" : "Saved Reading"} ${chargeTime} · Periodic Snapshot`
+    : "Periodic Snapshot · Not Available";
 
   const monthly = state.energy?.monthly || {};
   const cycleStart = monthly.cycle_start ? new Date(`${monthly.cycle_start}T12:00:00`) : null;
@@ -1382,10 +1281,10 @@ function renderEnergyPage() {
     ["Exported to Date", formatNumber(monthly.export_kwh, " kWh")],
     ["Projected Import", formatNumber(monthly.projected_import_kwh, " kWh")],
     ["Projected Export", formatNumber(monthly.projected_export_kwh, " kWh")],
-    ["Energy Charge", monthly.energy_charge == null ? "N/A" : `$${Number(monthly.energy_charge).toFixed(2)}`],
-    ["Export Credit", monthly.export_credit == null ? "N/A" : `$${Number(monthly.export_credit).toFixed(2)}`],
-    ["Projected Bill", monthly.estimated_bill == null ? "N/A" : `$${Number(monthly.estimated_bill).toFixed(2)}`],
-    ["Credit Bank", monthly.bank_balance == null ? "N/A" : `$${Number(monthly.bank_balance).toFixed(2)}`],
+    ["Energy Charge", monthly.energy_charge == null ? "—" : `$${Number(monthly.energy_charge).toFixed(2)}`],
+    ["Export Credit", monthly.export_credit == null ? "—" : `$${Number(monthly.export_credit).toFixed(2)}`],
+    ["Projected Bill", monthly.estimated_bill == null ? "—" : `$${Number(monthly.estimated_bill).toFixed(2)}`],
+    ["Credit Bank", monthly.bank_balance == null ? "—" : `$${Number(monthly.bank_balance).toFixed(2)}`],
   ];
   document.getElementById("energy-financial-list").replaceChildren(...financials.map(([label, value]) => {
     const article = document.createElement("article");
@@ -1396,13 +1295,11 @@ function renderEnergyPage() {
     return article;
   }));
   const rates = state.energy?.rates || {};
-  document.getElementById("utility-rate-status").textContent = rates.energy == null ? "Utility account rates require weekly verification." : `Configured energy rate $${Number(rates.energy).toFixed(3)}/kWh · Buyback $${Number(rates.buyback || 0).toFixed(3)}/kWh · Review weekly against Utility.`;
-  if (state.energy?.demo) document.getElementById("utility-rate-status").textContent = "Illustrative financials using recorded energy: $0.150/kWh import, $0.060/kWh export, and $15 base charge. Not an actual utility bill.";
+  document.getElementById("utility-rate-status").textContent = rates.energy == null ? "UTILITY account rates require weekly verification." : `Configured energy rate $${Number(rates.energy).toFixed(3)}/kWh · Buyback $${Number(rates.buyback || 0).toFixed(3)}/kWh · Review weekly against UTILITY.`;
   const current = state.forecast?.current || {};
   document.getElementById("top-weather-icon").textContent = safeText(current.icon, "☼");
-  document.getElementById("top-weather-value").textContent = state.forecast?.status === "healthy" ? formatNumber(current.temp_f, "°F", 0) : "N/A";
+  document.getElementById("top-weather-value").textContent = state.forecast?.status === "healthy" ? formatNumber(current.temp_f, "°F", 0) : "—";
   document.getElementById("top-weather-detail").textContent = state.forecast?.status === "healthy" ? titleCase(safeText(current.desc, "Weather")) : "Weather";
-  if (state.preview === "energy") renderPreview("energy");
 }
 
 function renderEnergyHistory() {
@@ -1450,7 +1347,7 @@ function renderEntityInventory() {
     article.className = item.availability === "available" ? "" : "is-unavailable";
     article.classList.toggle("control-entity", Boolean(item.controllable));
     article.classList.toggle("is-on", item.controllable && item.state === "on");
-    const name = document.createElement("strong"); name.textContent = item.name;
+    const name = document.createElement("strong"); name.textContent = displayName(item.name, "Unnamed Device");
     const value = document.createElement(item.controllable ? "button" : "span");
     if (item.controllable) {
       value.type = "button";
@@ -1517,11 +1414,11 @@ function renderCyberHealth() {
   const channels = cyber.channels || [];
   document.getElementById("security-server-summary").textContent = `${cyberLabel(cyber)}${cyber.observed_at ? ` · Checked ${humanTime(cyber.observed_at)}` : ""}`;
   const metrics = [
-    ["Protection Checks", fresh ? `${summary.passed} / ${summary.total}` : "N/A"],
-    ["Event Sources", fresh ? `${channels.filter(c => c.status === "current" && !c.capped).length} / 3` : "N/A"],
-    ["High Priority · 24h", fresh ? String(summary.high) : "N/A"],
-    ["Review · 24h", fresh ? String(summary.review) : "N/A"],
-    ["Home Network", cyber.network_summary || "Deferred"],
+    ["Protection Checks", fresh ? `${summary.passed} / ${summary.total}` : "—"],
+    ["Event Sources", fresh ? `${channels.filter(c => c.status === "current" && !c.capped).length} / 3` : "—"],
+    ["High Priority · 24h", fresh ? String(summary.high) : "—"],
+    ["Review · 24h", fresh ? String(summary.review) : "—"],
+    ["Home Network", "Deferred"],
   ].map(([label, value]) => {
     const article = document.createElement("article");
     const strong = document.createElement("strong"); strong.textContent = value;
@@ -1530,7 +1427,7 @@ function renderCyberHealth() {
     return article;
   });
   document.getElementById("security-gauge-grid").replaceChildren(...metrics);
-  const controls = (cyber.checks || []).map(c => ({id:c.label, status:!fresh ? "unknown" : c.status === "pass" ? "healthy" : c.status === "attention" ? "unhealthy" : "unknown", detail:cyber.demo ? "Illustrative Result · Not a Device Check" : !fresh ? "Waiting For Fresh Evidence" : c.status === "pass" ? "Verified Enabled / Current" : "Review This Check"}));
+  const controls = (cyber.checks || []).map(c => ({id:c.label, status:!fresh ? "unknown" : c.status === "pass" ? "healthy" : c.status === "attention" ? "unhealthy" : "unknown", detail:!fresh ? "Waiting For Fresh Evidence" : c.status === "pass" ? "Verified Enabled / Current" : "Review This Check"}));
   controls.push(...channels.map(c => ({id:`${c.name} Events`, status:!fresh ? "unknown" : c.status === "current" && !c.capped ? "healthy" : "unknown", detail:!fresh ? "Waiting For Collector" : c.capped ? "Event Limit Reached · Coverage Gap" : ({current:"Readable · Quiet Is OK", access_denied:"Administrator Activation Needed", unavailable:"Not Available",disabled:"Disabled"}[c.status] || "Unknown")})));
   fillList("security-control-list", controls, c => c.detail);
   const host = document.getElementById("cyber-finding-list");
@@ -1579,7 +1476,7 @@ function homeEnvironmentSummary() {
     ["living-room-temperature", "Living"],
     ["primary-bedroom-temperature", "Bedroom"],
   ].map(([id, label]) => [environmentReading(id), label]).filter(([reading]) => reading && Number.isFinite(Number(reading.value)));
-  if (!selected.length) return ["N/A", "Household climate data unavailable"];
+  if (!selected.length) return ["—", "Household climate data unavailable"];
 
   const values = selected.map(([reading]) => Number(reading.value));
   const unit = selected[0][0].unit || state.home?.climate?.unit || "°F";
@@ -1596,14 +1493,14 @@ function homeEnvironmentSummary() {
 
 function homeEnvironmentCompactSummary() {
   const [range] = homeEnvironmentSummary();
-  if (range === "N/A") return ["N/A", "Indoor Data Unavailable"];
+  if (range === "—") return ["—", "Indoor Data Unavailable"];
   const aqi = environmentReading("indoor-aqi");
   const aqiValue = aqi && Number.isFinite(Number(aqi.value)) ? Math.round(Number(aqi.value)) : null;
   return [range, aqiValue == null ? "Indoor Temperature Range" : `Indoor Range · AQI ${aqiValue}`];
 }
 
 function readingText(reading, digits = 1) {
-  if (!reading) return "N/A";
+  if (!reading) return "—";
   const unit = reading.unit || "";
   const separator = unit && !unit.startsWith("°") && unit !== "%" ? " " : "";
   return formatNumber(reading.value, `${separator}${unit}`, digits);
@@ -1655,9 +1552,9 @@ function renderEnvironmentSnapshot() {
 }
 
 function weatherTime(value, weekday = false) {
-  if (!value) return "N/A";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "N/A";
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat([], weekday
     ? { weekday: "short" }
     : { hour: "numeric", minute: "2-digit" }
@@ -1679,7 +1576,7 @@ function renderOutdoorWeather() {
   const currentHour = hourly[0] || hourlySource[0] || {};
 
   const radarImage = document.getElementById("weather-radar-image");
-  if (radarImage) {
+  if (radarImage?.dataset.radarSrc) {
     const radarBucket = String(Math.floor(Date.now() / (5 * 60 * 1000)));
     if (radarImage.dataset.radarBucket !== radarBucket) {
       radarImage.dataset.radarBucket = radarBucket;
@@ -1689,17 +1586,17 @@ function renderOutdoorWeather() {
 
   const location = document.getElementById("weather-location");
   if (location) location.textContent = healthy
-    ? `${safeText(forecast.location, "Example Region, TX")} · Updated ${humanTime(forecast.observed_at)}`
+    ? `${safeText(forecast.location, "Copperas Cove, TX")} · Updated ${humanTime(forecast.observed_at)}`
     : "Outdoor Weather Unavailable";
   document.getElementById("weather-now-icon").textContent = safeText(current.icon, "☼");
-  document.getElementById("weather-now-temp").textContent = healthy ? formatNumber(current.temp_f, "°F", 0) : "N/A";
+  document.getElementById("weather-now-temp").textContent = healthy ? formatNumber(current.temp_f, "°F", 0) : "—";
   document.getElementById("weather-now-condition").textContent = healthy ? titleCase(safeText(current.desc, "Current Conditions")) : "Weather Unavailable";
   document.getElementById("weather-now-feels").textContent = healthy ? `Feels Like ${formatNumber(current.feels_like_f, "°F", 0)}` : "Check The Weather Service";
 
   const facts = healthy ? [
     ["Today's High / Low", `${formatNumber(today.temp_max, "°", 0)} / ${formatNumber(today.temp_min, "°", 0)}`],
     ["Humidity", formatNumber(current.humidity, "%", 0)],
-    ["Wind", `${safeText(current.wind_dir, "N/A")} ${formatNumber(current.wind_mph, " mph", 0)}`],
+    ["Wind", `${safeText(current.wind_dir, "—")} ${formatNumber(current.wind_mph, " mph", 0)}`],
     ["Gusts", formatNumber(current.wind_gust_mph, " mph", 0)],
     ["Rain Now", formatNumber(current.precip_in, " in", 2)],
     ["Visibility", formatNumber(current.visibility_mi, " mi", 1)],
@@ -2044,8 +1941,7 @@ function renderError() {
   state.cyber = {status:"unavailable",fresh:false};
   setOverall("degraded", "Connection Needs Attention");
   document.getElementById("last-updated").textContent = lastObserved ? `Last Seen ${humanTime(lastObserved)}` : "Waiting For Local API";
-  for (const id of ["metric-hvac", "metric-environment", "metric-pantry", "metric-energy"]) document.getElementById(id).textContent = "N/A";
-  renderPreview(state.preview);
+  for (const id of ["metric-hvac", "metric-environment", "metric-pantry", "metric-energy"]) document.getElementById(id).textContent = "—";
   renderSecurityPage();
 }
 
@@ -2062,7 +1958,7 @@ async function refresh() {
   button.textContent = "Refreshing…";
   const hvacRevision = hvacUi.revision;
   try {
-    const [statusResponse, energyResponse, forecastResponse, homeResponse, inventoryResponse, idsResponse, pantryResponse, travelResponse, atlasResponse, householdResponse, cyberResponse] = await Promise.all([
+    const [statusResponse, energyResponse, forecastResponse, homeResponse, inventoryResponse, idsResponse, pantryResponse, travelResponse, argoResponse, atlasResponse, householdResponse, cyberResponse] = await Promise.all([
       fetchSnapshot("/v1/atlas/status"),
       fetchSnapshot("/v1/energy/status"),
       fetchSnapshot("/v1/energy/forecast"),
@@ -2071,6 +1967,7 @@ async function refresh() {
       fetchSnapshot("/v1/security/vacation-ids"),
       fetchSnapshot("/v1/galleyquest/status"),
       fetchSnapshot("/v1/travel"),
+      fetchSnapshot("/v1/argo"),
       fetchSnapshot("/health"),
       fetchSnapshot(`/v1/household?profile=${encodeURIComponent(state.profile)}`),
       fetchSnapshot("/v1/security/cyber"),
@@ -2089,6 +1986,7 @@ async function refresh() {
     state.ids = idsResponse?.ok ? await idsResponse.json() : { status: "unavailable", armed: false };
     state.pantry = pantryResponse?.ok ? await pantryResponse.json() : { status: "unavailable" };
     state.travel = travelResponse?.ok ? await travelResponse.json() : { status: "unavailable", summary: {}, trips: [] };
+    state.argo = argoResponse?.ok ? await argoResponse.json() : { status: "unavailable", summary: {}, assets: [] };
     state.atlas = atlasResponse?.ok ? await atlasResponse.json() : null;
     state.household = householdResponse?.ok ? await householdResponse.json() : { status: "unavailable", profiles: [], messages: [], unread: 0 };
     render(await statusResponse.json());
@@ -2110,14 +2008,16 @@ async function refresh() {
   }
 }
 
-document.getElementById("refresh-status").addEventListener("click", refresh);
+document.getElementById("refresh-status").addEventListener("click", () => {
+  refresh();
+  if (location.hash === "#energy") window.AtlasEnergy.load(true);
+});
 document.getElementById("travel-back").addEventListener("click", () => showTravelOverview(true));
 document.getElementById("travel-review-open").addEventListener("click", openTravelReview);
 document.getElementById("travel-review-save").addEventListener("click", saveTravelReview);
 document.getElementById("travel-info-close").addEventListener("click", () => document.getElementById("travel-info-dialog").close());
 document.getElementById("travel-review-close").addEventListener("click", () => document.getElementById("travel-review-dialog").close());
 document.getElementById("travel-loyalty-back").addEventListener("click", () => showTravelOverview(true));
-document.getElementById("open-preview").addEventListener("click", (event) => activateTab(event.currentTarget.dataset.fullTab || "systems", true));
 for (const card of document.querySelectorAll("[data-preview-action]")) {
   card.addEventListener("click", () => {
     const action = card.dataset.previewAction;
@@ -2188,7 +2088,7 @@ for (const button of document.querySelectorAll("[data-agent-open]")) {
       document.getElementById("agent-route-status").textContent = "Open WebUI is available on the Atlas PC only. Use this local Hermes chat from your phone.";
       return;
     }
-    const destination = button.dataset.agentOpen === "chatgpt" ? externalDestinations.chatgpt : householdUrl(17085);
+    const destination = button.dataset.agentOpen === "chatgpt" ? externalDestinations.chatgpt : "http://127.0.0.1:17085/";
     window.open(destination, "_blank", "noopener");
   });
 }
@@ -2289,7 +2189,6 @@ setInterval(updateClock, 30_000);
 // Refresh the visible dashboard, independently of the 20-minute host health task.
 setInterval(() => { if (!document.hidden) refresh(); }, 60_000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
-setInterval(() => { if (state.preview === "travel") renderHomeTravelTrips(); }, 60_000);
 configureGalleyQuestLinks();
 configureExternalLinks();
 function activateRoute() {
@@ -2304,5 +2203,4 @@ function activateRoute() {
 }
 activateRoute();
 window.addEventListener("hashchange", activateRoute);
-renderPreview("home");
 refresh();

@@ -46,7 +46,9 @@ const FLEET_API = 'https://fleet-api.prd.na.vn.cloud.tesla.com';
 const AUTH_URL  = 'https://fleet-auth.prd.vn.cloud.tesla.com/oauth2/v3/token';
 const AUTHORIZE_URL = 'https://auth.tesla.com/oauth2/v3/authorize';
 const REDIRECT_URI = process.env.TESLA_REDIRECT_URI || `http://localhost:${PORT}/callback`;
-const TESLA_SCOPES = 'openid offline_access energy_device_data energy_cmds';
+const VEHICLE_ENABLED = LIVE_ENABLED && process.env.ATLAS_TESLA_VEHICLE_READ_ENABLED === '1';
+const TESLA_SCOPES = ['openid', 'offline_access', 'energy_device_data',
+  ...(COMMANDS_ENABLED ? ['energy_cmds'] : []), ...(VEHICLE_ENABLED ? ['vehicle_device_data'] : [])].join(' ');
 const SECRET_HELPER = process.env.ATLAS_SECRET_HELPER;
 const NWS_ZONES = process.env.NWS_ZONES || ''; // Example County, Example County
 const LAT       = Number(process.env.LAT);
@@ -433,6 +435,8 @@ async function getToken() {
 const readCalendarHistory = require('./calendar-history').createCalendarReader({
   get: axios.get, getToken, base: FLEET_API + '/api/1/energy_sites/' + TESLA_SITE_ID,
 });
+// Optional outbound-only vehicle reader. No wake, command, or refresh endpoint.
+const basicVehicle = require('./tesla-basic').createBasicReader({dataDir:DATA_DIR, get:axios.get, getToken, enabled:VEHICLE_ENABLED});
 
 // ── Home Assistant Companion notifications ───────────────────────
 async function sendHANotification(msg,severity,title,tag){
@@ -693,7 +697,7 @@ app.use(express.static(path.join(__dirname,'public')));
 app.get('/api/powerwall',(req,res)=>{
   if(!latestData)return res.status(503).json({error:'No data yet'});
   const c=calcFin(fin);
-  res.json({...latestData,weather_alerts:activeWeatherAlerts,
+  res.json({...latestData,vehicle_charge_snapshot:basicVehicle.snapshot(),weather_alerts:activeWeatherAlerts,
     financials:process.env.ATLAS_RATES_CONFIGURED === '1' ? {
       today:{import_kwh:+fin.import_kwh.toFixed(3),export_kwh:+fin.export_kwh.toFixed(3),solar_kwh:+fin.solar_kwh.toFixed(3),home_kwh:+fin.home_kwh.toFixed(3),import_cost:+c.energy_charge.toFixed(3),export_credit:+c.export_credit.toFixed(3),credit_applied:+c.credit_applied.toFixed(3),net_energy:+c.net_energy.toFixed(3),banked:+c.banked.toFixed(3),solar_savings:+c.solar_savings.toFixed(3)},
       monthly:monthEstimate(),rates:RATES
@@ -778,6 +782,11 @@ app.post('/api/restore',async(req,res)=>{
   if (!LIVE_ENABLED) return;
   poll();
   setInterval(poll, 30000);
+  if (process.env.ATLAS_TESLA_VEHICLE_READ_ENABLED === '1') {
+    const checkVehicle = () => basicVehicle.tick().catch(() => console.error('[vehicle] Collector needs review'));
+    checkVehicle();
+    setInterval(checkVehicle, 60000); // Persisted gate inside the reader enforces 30 minutes.
+  }
   pollWeather();
   pollNWS();
   setInterval(pollWeather, 30 * 60 * 1000);
