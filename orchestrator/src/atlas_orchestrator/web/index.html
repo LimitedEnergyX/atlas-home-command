@@ -251,7 +251,7 @@
           </section>
           <section class="weather-command" aria-labelledby="outdoor-weather-title">
             <div class="section-heading weather-command-heading">
-              <div><h2 id="outdoor-weather-title">Weather Outlook</h2><p id="weather-location">Configured location</p></div>
+              <div><h2 id="outdoor-weather-title">Weather Command</h2><p id="weather-location">Configured location</p></div>
               <a class="embedded-app-link" id="open-radar" href="https://radar.weather.gov/?vm=r" target="_blank" rel="noopener">Open Interactive Radar <span aria-hidden="true">↗</span></a>
             </div>
             <div class="weather-alert-list" id="weather-alert-list" hidden></div>
@@ -279,7 +279,7 @@
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
         </section>
         <section class="tab-panel security-panel" role="tabpanel" id="panel-security" aria-labelledby="tab-security" hidden>
-          <header class="page-heading security-heading module-identity"><img class="module-portrait" src="/assets/greek/titan.png" alt="" width="80" height="80"><div><h1>TITAN · SECURITY</h1><p>Entry sensors, vacation checks, and computer health.</p></div><span class="independence-note">Secondary awareness · Not a monitored alarm</span></header>
+          <header class="page-heading security-heading module-identity"><img class="module-portrait" src="/assets/greek/titan.png" alt="" width="80" height="80"><div><h1>TITAN · SECURITY</h1><p>Entry sensors, vacation checks, and computer health.</p></div><span class="independence-note">Primary monitored alarm remains standalone</span></header>
           <section class="ids-panel" id="ids-panel"><div class="ids-copy"><h2 id="ids-state">Vacation IDS · Checking Coverage</h2><p id="ids-detail">Reading Echo ultrasonic motion sensors…</p><div class="ids-sensors" id="ids-sensors"></div></div><div class="ids-control"><span id="ids-mode">Disarmed</span><button type="button" id="ids-arm" hidden>Arm Vacation IDS</button><button type="button" id="ids-confirm" hidden>Confirm Arm</button><button type="button" id="ids-cancel" hidden>Cancel</button><p id="ids-control-status" aria-live="polite"></p></div></section>
           <section class="status-section cyber-section"><div class="section-heading"><div><h2>Atlas PC · Cyber Health</h2></div><span class="independence-note" id="security-server-summary">Awaiting Collector</span></div><div class="security-gauge-grid" id="security-gauge-grid"></div><div class="status-list compact" id="security-control-list"></div><h3>Detection Review</h3><div class="status-list compact" id="cyber-finding-list"></div><details class="cyber-method"><summary>Coverage &amp; Method</summary><p id="cyber-coverage-note"></p><p>Checks every five minutes. Events are grouped, not counted as confirmed attacks. Only selected detection rules are covered; this is not a full security audit. Command lines and raw event messages stay out of Atlas. Network assessment is deferred until UniFi.</p><a class="embedded-app-link" id="open-sysmon" href="#" target="_blank" rel="noopener">Historical Grafana Charts</a></details></section>
           <button class="text-button" type="button" data-tab-target="home">Return Home</button>
