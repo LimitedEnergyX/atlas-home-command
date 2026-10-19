@@ -21,6 +21,12 @@ PATTERNS = {
     "provider credential": r"\b(?:sk-proj-|sk-ant-|ghp_|github_pat_)[A-Za-z0-9_-]{30,}",
     "JWT-shaped credential": r"\beyJ[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{20,}",
     "private LAN address": r"\b192\.168\.\d{1,3}\.\d{1,3}\b",
+    "private 10.x address": r"\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
+    "Tailscale/CGNAT address": r"\b100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}\b",
+    "VIN-shaped identifier": r"\b(?!5YJ0{13}\d\b)(?=[A-HJ-NPR-Z0-9]*\d)(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}\b",
+    "phone number": r"(?<![\d.])\(?\b\d{3}\)?[-. ]\d{3}[-. ]\d{4}\b",
+    "email address": r"\b[\w.+-]+@(?!example\.(?:com|org|net|invalid)\b)[A-Za-z0-9-]+\.[A-Za-z][\w.-]*",
+    "household name": r"(?i)(?<![A-Za-z])(?:shawn|tovey|aren(?![\u2019']t))(?![A-Za-z])",
 }
 
 # Generated editorial page headers, reviewed individually for public use.
@@ -44,7 +50,7 @@ def check():
             issues.append(f"{relative}: excluded artifact type")
         if path.suffix.lower()==".png" and relative.as_posix() not in APPROVED_RASTERS:
             issues.append(f"{relative}: raster is outside the asset allowlist")
-        if path.suffix not in TEXT:
+        if path.suffix not in TEXT or relative.as_posix()=="tools/check_release.py":
             continue
         text=path.read_text(encoding="utf-8")
         for label,pattern in PATTERNS.items():

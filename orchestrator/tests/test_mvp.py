@@ -653,15 +653,15 @@ class APITests(unittest.TestCase):
         server = AtlasHTTPServer(
             ("127.0.0.1", 0),
             core,
-            trusted_networks=("127.0.0.0/8", "192.0.2.0/24", "100.64.50.10/10"),
+            trusted_networks=("127.0.0.0/8", "192.0.2.0/24", "198.51.100.0/24"),
         )
         try:
             self.assertTrue(server.client_is_trusted("192.0.2.25"))
-            self.assertTrue(server.client_is_trusted("100.64.50.10"))
+            self.assertTrue(server.client_is_trusted("198.51.100.10"))
             self.assertFalse(server.client_is_trusted("172.22.112.1"))
             self.assertTrue(server.client_can_write("127.0.0.1"))
             self.assertFalse(server.client_can_write("192.0.2.25"))
-            self.assertFalse(server.client_can_write("100.64.50.10"))
+            self.assertFalse(server.client_can_write("198.51.100.10"))
         finally:
             server.server_close()
 
