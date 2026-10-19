@@ -32,3 +32,9 @@ config/*.json
 config/galleyquest.js
 .DS_Store
 Thumbs.db
+
+# Private deployment artifacts (2026-10 sync)
+*.bak*
+**/server-config.json
+month-state.json
+*login*.txt
