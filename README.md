@@ -1,27 +1,51 @@
 # Atlas Home Command Center
 
-A local-first command center for energy, home controls, appointments, vehicles, travel, pantry, and maintenance. Each area has its own visual identity, but the important readings and actions stay close at hand.
+A local-first household command center for energy, home status, library reference, travel, vehicles, pantry, maintenance, and systems. Atlas runs on household hardware. Local-first does not mean every optional provider works offline: Tesla and some Home Assistant integrations still depend on their vendor clouds when configured.
 
-This repository is a **sanitized distribution**, not a backup of a household installation. It starts without personal records or credentials. Optional integrations require your own configuration and authorization. Local-first does not mean every provider works offline: Tesla and some Home Assistant integrations depend on their vendor clouds.
+This repository is a **sanitized distribution**, not a backup of a household installation. It starts without personal records or credentials. Optional integrations require your own configuration and authorization.
 
-## Explore the interface
+## Explore the current interface
 
-| Energy | Travel |
-|:--|:--|
-| ![Solar and household energy artwork](orchestrator/src/atlas_orchestrator/web/atlas-house-hilltop.png) | ![Illustrative Atlas travel dashboard](docs/images/travel.png) |
+| Home | Energy | Library |
+|:--|:--|:--|
+| ![Atlas Home](docs/images/live/home.png) | ![Atlas Energy](docs/images/live/energy.png) | ![Atlas Library disaster preparedness](docs/images/live/library.png) |
 
-The images above are from the sanitized demo. The energy house image is owner-approved artwork. The travel screenshot shows fictional sample records, not a live itinerary.
+| Command | Environment | Vehicles |
+|:--|:--|:--|
+| ![Atlas Command](docs/images/live/command.png) | ![Atlas Environment](docs/images/live/environment.png) | ![Atlas Vehicles](docs/images/live/argo.png) |
 
-## September interface update
+Screenshots above are from a sanitized live capture. The public energy house artwork remains the owner-approved hilltop illustration (`orchestrator/src/atlas_orchestrator/web/atlas-house-hilltop.png`). Demo and fixture records are fictional.
 
-- **Energy:** one page with an illustrative house and compact history on the left, aligned readings and billing estimates on the right. Smaller screens stack the content. History opens on House Load; a refresh preserves the selected view and period.
-- **Vehicle charging:** a separate tab after Grid, periodic charge readings, and reviewed charging references. Missing source attribution stays unknown. House Load includes charging when the provider does not supply a separate vehicle channel.
-- **Calendar:** a read-only, reviewed appointment snapshot with dates, cancellation state, and freshness. This is separate from the energy-history calendar and is not automatic Google Calendar synchronization.
-- **Vehicles / Argo:** local vehicle profiles and concise service records. The public database starts empty. A local insert-only importer supports the three existing vehicle slots.
-- **Travel:** trip records, provider evidence, coverage status, and recorded per diem. Card use or a saved note does not verify insurance or lounge eligibility.
-- **Home:** one-tap module navigation, compact status, configured light controls, and shared HVAC controls.
+## November 2026 interface (current)
 
-The demo uses generated artwork and fictional household, vehicle, calendar, and travel examples. Sol includes the owner's explicitly approved house illustration; the Home hero is separate and unchanged. Vehicle artwork includes a Tesla Model Y, and the Dallas storm radar is clearly labeled as simulated. The previously approved energy samples retain their original dates; they are not live readings.
+### Home and Command
+- **Home** is the default landing page with an Energy-style hero: Solar, Powerwall, Athena (read-only), Bluetti, UPS, and display-only lights.
+- **Command** stays one click away for a compact systems-and-energy summary.
+- Status settles to live household state (for example, All Systems Online) rather than a connecting placeholder.
+
+### Library
+There is now a library that can help with medical issues, water issues, and all kinds of problems, both from the equipment already installed in the house, including manuals, as well as publicly available information from universities and governments on how to survive a disaster. All of this is stored locally on a home-based server, along with AI-powered agents that can answer questions based on those documents without any internet should something happen.
+
+The Library hero screenshot shows the offline Post Disaster Resource Library card grid used for disaster preparedness reference.
+
+### Energy
+- Solar, Powerwall, read-only Athena vehicle charge state, Bluetti portable battery, and UPS telemetry.
+- No water heater controls on Energy.
+- Optional Powerwall actions stay preview/confirm bounded. Live access defaults off in this public package.
+
+### Bot staff lanes (operator assistants)
+- **Chief of Staff** is the single primary front door and router for household coordination, with a once-daily sync and hanging-items nudges three times daily (9 AM, 2 PM, and 6 PM America/Chicago).
+- **Atlas Prime** covers Atlas and engineering work on the household command center.
+- **Groko** covers research, documentation, and limitedenergy.net.
+- The old "every bot FYIs Grok Bot" routing rule is retired. Grok Bot is not the router.
+- **Registrar** is a one-way household fact keeper.
+- **Voice Editor** is on-demand only.
+- Medical topics stay walled between household sides.
+- Local **Hermes / Ollama** answers from device state with $0 cloud spend when local models are configured.
+
+### Other modules
+- Environment, Security, Pantry, Travel, Vehicles (Argo), Maintenance (Vulcan), and Systems (Daedalus) remain first-class views.
+- Calendar remains a reviewed snapshot surface in the public distribution unless the operator connects their own sources.
 
 ## Architecture at a glance
 
@@ -30,6 +54,7 @@ The demo uses generated artwork and fictional household, vehicle, calendar, and 
 | Browser or household tablet | Opens Atlas pages and, if configured, Home Assistant. No direct access to private service ports is needed. |
 | Atlas orchestrator | Serves the interface, applies the operating charter, and validates supported reads and writes. |
 | Local adapters and ledgers | Normalize energy and device information, then retain reviewed household records in local storage. |
+| Offline Library | Local manuals and public reference corpora for disaster, medical, water, and repairs, queryable by local AI without internet. |
 | Optional integrations | Home Assistant, Tesla, and other providers remain separately configured. Some rely on vendor clouds. |
 
 This is a deployment overview, not a claim that every integration is included or active. See [configuration](docs/configuration.md) and [security boundaries](SECURITY.md) for exact ports, trust boundaries, and setup.
@@ -59,8 +84,6 @@ atlas-orchestrator --data-dir ./data serve --host 127.0.0.1 --port 8080
 
 Start on loopback. Review [configuration](docs/configuration.md), [security boundaries](SECURITY.md), and the [authority matrix](docs/AUTHORITY_MATRIX.md) before connecting services or exposing the application to another device. This release does not configure router forwarding, public tunnels, cloud receivers, credentials, or scheduled tasks.
 
-The optional Node energy service is separately configured and disabled by default. The Python shell reads its normalized output through a loopback endpoint. See [basic Tesla vehicle reads](docs/tesla-basic.md) and [reviewed record formats](docs/reviewed-records.md).
-
 ## What is connected, and what is not
 
 | Area | Public distribution |
@@ -68,19 +91,18 @@ The optional Node energy service is separately configured and disabled by defaul
 | Home Assistant | Server-side connector and bounded control routes; requires operator configuration |
 | Powerwall | Optional Tesla Fleet API energy adapter; live access, commands, and notifications default off |
 | Tesla vehicle | Optional outbound charge-state reader, at most every 30 minutes, with a persisted request budget and no wake or vehicle commands |
+| Library | Offline local corpora and manuals; public package does not ship private household document stores |
 | Calendar | Saved snapshot only; no email or calendar-account connection bundled |
 | Vehicles | Empty SQLite store and local insert-only import; no document server or automatic service-history lookup |
 | Travel and maintenance | Local records and review workflows; no booking, payment, or provider verification performed automatically |
 | GalleyQuest | Pantry integration contract and standalone app; public orchestrator does not serve a separate private checkout |
-| AI | Optional configured providers; no model or paid fallback is activated by this release |
-
-The basic vehicle reader is **not a complete charging-session collector**. Sleeping vehicles and short sessions can be missed. Repeated readings contain cumulative session counters and must not be added together. A Mobile Connector does not give this reader a separate home-energy meter. A local zero-dollar configuration is an operator assertion, not a guarantee about Tesla billing.
+| AI | Optional configured providers; local Hermes/Ollama preferred; no paid cloud fallback is activated by this release |
 
 ## Safety and verification
 
 The versioned [operating charter](AI_RULES.md) is checked before AI requests. Models cannot grant themselves permission. Server-side policy validates supported actions independently, and reads after commands distinguish a request being accepted from its outcome being observed. This is not a certified life-safety system.
 
-Use the checks in [.github/workflows/verify.yml](.github/workflows/verify.yml) and the [release notes](docs/releases/2026-09-energy-vehicles-calendar.md). Tests use temporary records and mocked services. Passing tests does not establish compatibility with every device, restore complete backups, verify a provider account, or guarantee absence of sensitive data. Review the exact publication diff and generated files before pushing.
+Use the checks in [.github/workflows/verify.yml](.github/workflows/verify.yml). Tests use temporary records and mocked services. Passing tests does not establish compatibility with every device, restore complete backups, verify a provider account, or guarantee absence of sensitive data. Review the exact publication diff and generated files before pushing.
 
 ## License and contributions
 

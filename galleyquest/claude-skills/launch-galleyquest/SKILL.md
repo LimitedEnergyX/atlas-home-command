@@ -1,6 +1,6 @@
 ---
 name: launch-galleyquest
-description: "Launch GalleyQuest" — fill the operator's Store A Example Region curbside pickup cart from the current GalleyQuest grocery list, in their own Chrome, then mark the items ordered. Stops before checkout.
+description: "Launch GalleyQuest" - fill the operator's Store A Example Region curbside pickup cart from the current GalleyQuest grocery list, in their own Chrome, then mark the items ordered. Stops before checkout.
 ---
 
 # Launch GalleyQuest (Store A Example Region pickup)

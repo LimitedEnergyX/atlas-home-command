@@ -10,7 +10,7 @@
 - Vehicle charging: fictional readings and reviewed-reference examples. Home-source energy is shown only where the example explicitly supplies it. Rated miles are not inferred from kWh. Sample readings are not a complete session history.
 - Calendar: two fictional date references, separate from the energy-history date selector. No connected calendar is queried or changed by the demo.
 - Vehicles: Tesla Model Y, Chevrolet Silverado, and Harley-Davidson examples with generated photographic-style artwork and fictional service records. No owner vehicle photos, plates, VINs, or documents are included in these additions.
-- House artwork: Sol reuses the owner's existing hilltop-house illustration with explicit approval. It depicts the owner's property. The separate Home hero is unchanged. Historical energy samples retain their recorded dates and are labeled as not live.
+- House artwork: Sol may reuse the owner-approved hilltop-house illustration shipped with this package. November 2026 public screenshots under docs/images/live follow the owner instruction to leave household house images as they are. Historical energy samples retain their recorded dates and are labeled as not live.
 - Radar: a static, generated Dallas-Fort Worth storm scenario labeled simulated in the image and card. It is not current weather, a forecast, or a real alert.
 - Maintenance: illustrative annual solar-panel cleaning record, not a booked service or universal recommended cleaning interval.
 

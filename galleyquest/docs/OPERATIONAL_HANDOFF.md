@@ -1,4 +1,4 @@
-# GalleyQuest — Operational Handoff
+# GalleyQuest - Operational Handoff
 
 **GalleyQuest is now the only active/operational project.** The former
 `D:\DEV\PANTRY` offline harness was consolidated into GalleyQuest and retired on
@@ -8,7 +8,7 @@ an external archive, not in this repo.
 This is an operational handoff, not product documentation. Facts are drawn from
 the actual repo files, scripts, and verified live-database calls. Anything not
 provable from those is marked **UNKNOWN**. No secret values (keys, tokens,
-passwords, JWTs, connection strings) appear here — names and locations only.
+passwords, JWTs, connection strings) appear here - names and locations only.
 
 ## 1. Project overview
 
@@ -23,7 +23,7 @@ passwords, JWTs, connection strings) appear here — names and locations only.
   - `origin` → the maintainer's public fork
   - `upstream` → the original author's repository
 - **Relationship to the original repo:** this clone is a fork of
-  the original author's repository. Local commits are **not pushed** — no PR, no
+  the original author's repository. Local commits are **not pushed** - no PR, no
   remote branch, nothing deployed from here.
 - **The live app:** a separate running instance at `http://aet-w11l.local:8000/`
   (local-network host), backed by the same Supabase project. The offline harness
@@ -47,10 +47,10 @@ passwords, JWTs, connection strings) appear here — names and locations only.
 - **RLS / permissions:** RLS permits anon row CRUD on the app's tables (the app
   performs inserts/updates/deletes itself). Exact policy definitions are
   **UNKNOWN** (not readable via anon; PostgREST OpenAPI root returns 401 for anon).
-- **CRUD ≠ DDL — important:** normal PostgREST CRUD with the anon key **cannot**
+- **CRUD ≠ DDL - important:** normal PostgREST CRUD with the anon key **cannot**
   change schema. Altering a constraint/table/type (DDL) needs elevated access
   (direct Postgres as owner/`service_role`, or the Supabase Management API with a
-  personal access token). **None is available locally** — verified: no `psql`,
+  personal access token). **None is available locally** - verified: no `psql`,
   no Supabase CLI, no service-role key, no DB password, no connection string, no
   admin credential in Windows Credential Manager; 5 common admin SQL RPC names
   probed → all 404.
@@ -65,22 +65,22 @@ passwords, JWTs, connection strings) appear here — names and locations only.
   NULL; empty string is rejected.
 - **Accepted theme values (empirically verified against the live DB, 2026-07-20,
   by PATCHing one temporary recipe through every value):** `Mexican, Thai, Asian,
-  Crock Pot, Grab Night, Invention, Open` — or NULL.
+  Crock Pot, Grab Night, Invention, Open` - or NULL.
 - **Rejected:** `Tex-Mex, Southwest, Mediterranean` → HTTP 400, pg error `23514`,
   constraint **`recipes_theme_check`** (empty string also rejected).
-- The app `THEMES` list (`index.html`) is set to exactly the 7 accepted values —
+- The app `THEMES` list (`index.html`) is set to exactly the 7 accepted values -
   **no code/DB mismatch.** Adding the three cuisine themes would need DDL on
   `recipes_theme_check` (elevated access not available locally).
 - **`meal_plan.theme`:** **unconstrained** (verified: a test insert with an
   arbitrary theme succeeded, then was deleted).
 - **Authoritative schema / migrations:** **none.** No migrations directory, no
-  authoritative `pg_dump`. `schema.sql` is inferred — a reference, not truth. The
+  authoritative `pg_dump`. `schema.sql` is inferred - a reference, not truth. The
   authoritative schema lives only in the live Supabase project.
 
 ## 3. How data has been read and written
 
 All recipe operations used **direct HTTPS calls to Supabase PostgREST** with the
-anon key read at runtime from `config.js` — the same path the app uses, from
+anon key read at runtime from `config.js` - the same path the app uses, from
 PowerShell. Credential handling pattern (no secrets shown):
 
 ```powershell
@@ -105,7 +105,7 @@ $H = @{ apikey=$sbKey; Authorization="Bearer $sbKey"; 'Content-Type'='applicatio
   names that already exist.
 - **Authoritative row count:** read the `Content-Range` header with
   `Prefer: count=exact`. (In PowerShell, `@($rows).Count` mis-reports an empty
-  result as `1` because `@($null).Count == 1` — don't trust it for counts.)
+  result as `1` because `@($null).Count == 1` - don't trust it for counts.)
 - **Backups:** before any bulk change, export the six tables to a timestamped
   folder under `.local\backups\<timestamp>\` (git-ignored) with a
   `backup-manifest.json` (row counts, project ref, per-file SHA-256).
@@ -115,26 +115,26 @@ $H = @{ apikey=$sbKey; Authorization="Bearer $sbKey"; 'Content-Type'='applicatio
 - **Baseline = final counts** (no residue after tests): recipes **28**,
   recipe_ingredients **266**, stock_items 170, meal_plan 7, grocery_extra_items 0,
   grocery_dismissed_items 8.
-- **Recipe CRUD** verified — create / update-theme / delete, via the API and
+- **Recipe CRUD** verified - create / update-theme / delete, via the API and
   through the app's Add/Edit Recipe modal (accepted theme).
-- **Ingredient CRUD** verified — insert / read-back / update-quantity / delete,
+- **Ingredient CRUD** verified - insert / read-back / update-quantity / delete,
   `stock_item_id` null.
 - **Latest backup:** `.local\backups\20260720-220633\` (+ `backup-manifest.json`).
 - **Bulk imports still require application-side deduplication** (dedupe incoming
   recipes by name against the existing set before inserting).
-- **PostgREST is not one transaction across recipe + ingredient inserts** — the
+- **PostgREST is not one transaction across recipe + ingredient inserts** - the
   recipe insert and its ingredient inserts are separate requests; a failure after
   the recipe insert can leave a recipe with no ingredients. Clean up or retry.
 
 ## 4. Application structure
 
-- `index.html` — the whole app: markup + inline `<style>` + inline `<script>`
+- `index.html` - the whole app: markup + inline `<style>` + inline `<script>`
   (Supabase client, render/CRUD logic). **Authoritative application source.**
-- `ui-cards.js` — collapsed-card grid + expand/collapse for the Recipes, Cook Now,
+- `ui-cards.js` - collapsed-card grid + expand/collapse for the Recipes, Cook Now,
   and Grocery tabs; loaded before the inline script.
-- `server.js` — dependency-free Node static server, port 8000.
-- `config.js` — git-ignored; Supabase URL + anon key (template `config.example.js`).
-- `check-fw.ps1`, `check-node.ps1`, `start-tracker.bat` — original repo helpers (unchanged).
+- `server.js` - dependency-free Node static server, port 8000.
+- `config.js` - git-ignored; Supabase URL + anon key (template `config.example.js`).
+- `check-fw.ps1`, `check-node.ps1`, `start-tracker.bat` - original repo helpers (unchanged).
 
 **Theme list:** defined once as `const THEMES = […]` in `index.html`. It feeds
 three selectors: the recipe modal dropdown (`#f-recipe-theme`), the recipe filter
@@ -175,24 +175,24 @@ offline app copy) is git-ignored under `.local\pantry-snapshot\`.
 
 ## 6. Migration history (PANTRY → GalleyQuest)
 
-- **Prior harness:** `D:\DEV\PANTRY` — a local-only (no remote) offline fork of
+- **Prior harness:** `D:\DEV\PANTRY` - a local-only (no remote) offline fork of
   the live app, branch `tweaks`, HEAD `2cc162a` at retirement. Held the offline
-  harness, a data snapshot, ClearWright governance artifacts, and the card-grid
+  harness, a data snapshot, Local Assistant governance artifacts, and the card-grid
   work that was ported into GalleyQuest.
 - **Migrated (tracked) here:** reusable offline-harness tooling →
   `tools/offline-harness/` (`extract.py` repointed to the new snapshot path,
   `local-db.js`, `serve.py`, `schema.sql`); this handoff; the retirement manifest.
 - **Retained local-only (git-ignored, `.local\pantry-snapshot\`):** the runnable
-  offline harness + data snapshot — `seed.js`, `data/*.json`, offline
+  offline harness + data snapshot - `seed.js`, `data/*.json`, offline
   `index.html`/`app.js`/`styles.css`, `original.html`. Contains household data and
   the anon key (`original.html`, `app.js`); never committed.
-- **Left only in the archive:** PANTRY's ClearWright artifacts (`tools/cw-*`),
+- **Left only in the archive:** PANTRY's Local Assistant artifacts (`tools/cw-*`),
   CW support scripts (`make_excerpts.py`, `scan_check.py`, `verify_readme.py`),
   and the duplicate `ui-cards.js` (byte-identical to GalleyQuest's authoritative
   copy). Reason: historical/duplicate, not operationally useful.
 - **Archive:** `D:\DEV\_archives\PANTRY-pre-consolidation-20260720-203016.zip`
   (full `.git` history included; SHA-256 in `docs/PANTRY_RETIREMENT_MANIFEST.md`).
-- **PANTRY retirement date:** 2026-07-20 — the `D:\DEV\PANTRY` directory is
+- **PANTRY retirement date:** 2026-07-20 - the `D:\DEV\PANTRY` directory is
   removed after archive + migration verification pass.
 
 ## 7. Evidence & unknowns
@@ -203,5 +203,5 @@ offline app copy) is git-ignored under `.local\pantry-snapshot\`.
   400, the anon JWT `role` claim, admin-RPC 404 probes); `git` state of both repos.
 - **UNKNOWN:** exact RLS policy definitions; provenance of the original recipes
   beyond "authored in the live app" (owner's own data, not scraped); how/when
-  PANTRY reached HEAD `2cc162a` (archived as-is); any DDL path — none exists with
+  PANTRY reached HEAD `2cc162a` (archived as-is); any DDL path - none exists with
   the access available locally.

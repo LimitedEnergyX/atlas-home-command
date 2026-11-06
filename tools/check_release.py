@@ -10,7 +10,7 @@ APPROVED_RASTERS = {"orchestrator/src/atlas_orchestrator/web/heroes/atlas-home-d
     f"orchestrator/src/atlas_orchestrator/web/greek/{name}.png"
     for name in ("vesta", "sol", "aeolus", "titan", "demeter", "oracle", "vulcan", "athena", "olympus")
 }
-# Individually reviewed September 25 assets. The owner explicitly approved the
+# Individually reviewed web assets. The owner explicitly approved the
 # existing house illustration; the vehicle and simulated radar images are generated.
 APPROVED_RASTERS |= {
     f"orchestrator/src/atlas_orchestrator/web/{name}.png"
@@ -34,8 +34,24 @@ APPROVED_RASTERS |= {
     f"orchestrator/src/atlas_orchestrator/web/heroes/{name}.png"
     for name in ("travel", "pantry", "maintenance", "systems")
 }
-# Screenshots of this disconnected public demo only, never the private deployment.
-APPROVED_RASTERS |= {f"docs/images/{name}.png" for name in ("home", "energy", "travel", "vehicles", "pantry", "environment")}
+# Individually reviewed sanitized GUI screenshots in docs/images/live/.
+APPROVED_RASTERS |= {
+    f"docs/images/live/{name}.png"
+    for name in (
+        "argo",
+        "command",
+        "energy",
+        "environment",
+        "home",
+        "library",
+        "maintenance",
+        "pantry",
+        "security",
+        "systems",
+        "travel",
+        "travel-rewards",
+    )
+}
 
 
 def check():

@@ -1,13 +1,13 @@
 <#
   serve-galleyquest.ps1
   Starts GalleyQuest (static site on http://localhost:8000/) as a DETACHED,
-  self-surviving python process — modeled on ClearWright's launcher. Run by the
+  self-surviving python process - modeled on Local Assistant's launcher. Run by the
   "GalleyQuest Server" scheduled task, or manually:
       powershell -ExecutionPolicy Bypass -File .\scripts\serve-galleyquest.ps1
 
   Returns immediately; the server keeps running independently of this launcher.
   (A blocking `& python` child gets reaped by the task's job object seconds after
-  it starts — that was the flapping. Start-Process detaches it, like CW does.)
+  it starts - that was the flapping. Start-Process detaches it, like CW does.)
 #>
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot          # repo root (this script lives in scripts\)

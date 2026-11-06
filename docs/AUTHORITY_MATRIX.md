@@ -1,4 +1,4 @@
-# Atlas Orchestrator — Action Authority Matrix
+# Atlas Orchestrator - Action Authority Matrix
 
 **Status:** Approved by operator for the local sandbox
 **Date:** 2026-08-19  

@@ -6,7 +6,7 @@ Ops helpers for running GalleyQuest as an always-on local site.
 
 GalleyQuest is a static site, so it needs a small web-server process alive to
 answer `http://localhost:8000/`. These scripts register a Scheduled Task that
-starts it at logon and restarts it if it ever stops — so it survives reboots
+starts it at logon and restarts it if it ever stops - so it survives reboots
 without you babysitting a terminal.
 
 **Install (one time):**
@@ -18,8 +18,8 @@ No admin rights needed.
 
 **Files**
 
-- `serve-galleyquest.ps1` — serves the repo root on port 8000 (logs to `serve.log`).
-- `install-galleyquest-task.ps1` — registers/updates the `GalleyQuest Server` task.
+- `serve-galleyquest.ps1` - serves the repo root on port 8000 (logs to `serve.log`).
+- `install-galleyquest-task.ps1` - registers/updates the `GalleyQuest Server` task.
 
 **Check / control it**
 

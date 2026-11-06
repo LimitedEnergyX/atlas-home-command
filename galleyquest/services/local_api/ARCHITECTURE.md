@@ -1,6 +1,6 @@
 # Architecture decision: household first, tenant-ready boundaries
 
-2026-09-13. This is a migration foundation, not a claim of SaaS readiness.
+local-api foundation. This is a migration foundation, not a claim of SaaS readiness.
 
 ## Direction
 
