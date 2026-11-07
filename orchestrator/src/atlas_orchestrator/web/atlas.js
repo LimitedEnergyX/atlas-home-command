@@ -1576,6 +1576,18 @@ function renderOutdoorWeather() {
   const currentHour = hourly[0] || hourlySource[0] || {};
 
   const radarImage = document.getElementById("weather-radar-image");
+  if (radarImage && !radarImage.dataset.radarSrc && !radarImage.getAttribute("src")) {
+    radarImage.dataset.radarSrc = "https://radar.weather.gov/ridge/standard/SOUTHPLAINS_loop.gif";
+  }
+  if (radarImage && !radarImage.dataset.radarBound) {
+    radarImage.dataset.radarBound = "1";
+    radarImage.addEventListener("error", () => {
+      const note = document.createElement("p");
+      note.className = "empty-state";
+      note.textContent = "Statewide Texas radar did not load from the National Weather Service. This is not a live radar image.";
+      radarImage.replaceWith(note);
+    });
+  }
   if (radarImage?.dataset.radarSrc) {
     const radarBucket = String(Math.floor(Date.now() / (5 * 60 * 1000)));
     if (radarImage.dataset.radarBucket !== radarBucket) {
@@ -1586,7 +1598,7 @@ function renderOutdoorWeather() {
 
   const location = document.getElementById("weather-location");
   if (location) location.textContent = healthy
-    ? `${safeText(forecast.location, "Copperas Cove, TX")} · Updated ${humanTime(forecast.observed_at)}`
+    ? `${safeText(forecast.location, "Texas")} · Updated ${humanTime(forecast.observed_at)}`
     : "Outdoor Weather Unavailable";
   document.getElementById("weather-now-icon").textContent = safeText(current.icon, "☼");
   document.getElementById("weather-now-temp").textContent = healthy ? formatNumber(current.temp_f, "°F", 0) : "—";
@@ -1975,6 +1987,9 @@ async function refresh() {
     if (!statusResponse?.ok) throw new Error("Status Unavailable");
     state.cyber = cyberResponse?.ok ? await cyberResponse.json() : {status:"unavailable",fresh:false};
     state.energy = energyResponse?.ok ? await energyResponse.json() : { status: "unavailable" };
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function" && typeof CustomEvent === "function") {
+      window.dispatchEvent(new CustomEvent("atlas-sol-live", { detail: state.energy }));
+    }
     state.forecast = forecastResponse?.ok ? await forecastResponse.json() : { status: "unavailable" };
     const homeSnapshot = homeResponse?.ok ? await homeResponse.json() : { status: "unavailable" };
     // A refresh started before a control request must not replace its newer readback.

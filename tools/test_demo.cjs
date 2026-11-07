@@ -71,7 +71,7 @@ vm.runInNewContext(fs.readFileSync('demo/demo.js','utf8'),context);
   assert(fs.existsSync('dist/assets/heroes/'+name+'.png'),name+' bundled artwork');
  }
  assert.equal((html.match(/class="module-art"/g)||[]).length,4);
- assert(html.includes('assets/heroes/atlas-home-desktop.png'),'Home artwork preserved');
+ assert(html.includes('id="home-hero"') && html.includes('assets/atlas-house-hilltop.png'),'Home uses the public hilltop house illustration');
  assert(!html.includes('Copperas Cove'),'No private default weather location');
  for(const asset of ['model-y.png','pickup.png','motorcycle.png','dallas-radar-demo.png'])assert(fs.existsSync('dist/assets/'+asset),asset);
  const vehicleScript=fs.readFileSync('dist/argo/assets/js/vehicle.js','utf8');

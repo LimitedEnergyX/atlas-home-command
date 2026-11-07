@@ -146,26 +146,28 @@ class ShellTests(unittest.TestCase):
     def test_home_artwork_exposes_clickable_live_module_tiles(self):
         _, _, body = self.get("/")
         page = body.decode("utf-8")
-        self.assertIn('class="home-canvas"', page)
+        self.assertIn('id="home-hero"', page)
         self.assertNotIn('id="home-preview"', page)
         self.assertNotIn('id="open-preview"', page)
         home = page.split('id="panel-home"', 1)[1].split('id="home-control-overlay"', 1)[0]
         self.assertIn('id="home-hvac"', home)
         self.assertIn('quick-light-controls', home)
+        self.assertIn('Energy At A Glance', home)
         self.assertNotIn("Household highlights", page)
         self.assertNotIn("Select a module", page)
-        for module in ("energy", "environment", "security", "pantry", "travel", "argo", "maintenance", "systems"):
+        for module in ("library", "energy", "environment", "security", "pantry", "travel", "argo", "maintenance", "systems"):
             self.assertIn(f'data-tab-target="{module}"', page)
-        self.assertIn('class="home-module-grid"', page)
+        self.assertIn('data-tab="command"', page)
+        self.assertIn('icon-home', page)
+        self.assertIn('class="home-mods"', page)
         stylesheet = self.get("/assets/atlas.css")[2].decode("utf-8")
-        tiles = page.split('class="home-module-grid"', 1)[1].split('</nav>', 1)[0]
-        self.assertEqual(tiles.count('class="greek-association"'), 9)
-        self.assertNotIn('class="nav-icon ', tiles)
+        tiles = page.split('class="home-mods"', 1)[1].split('</nav>', 1)[0]
+        self.assertEqual(tiles.count("<em>"), 9)
+        self.assertIn('icon-home', page)
         self.assertIn('width: clamp(3.5rem, 30cqw, 7rem)', stylesheet)
-        self.assertIn('.home-module-grid button > .nav-icon { display: none; }', stylesheet)
         self.assertNotIn('/assets/heroes/atlas-home-standard.png', page)
         self.assertNotIn('/assets/heroes/atlas-home-mobile.png', page)
-        self.assertIn('/assets/heroes/atlas-home-desktop.png', page)
+        self.assertIn('/assets/atlas-house-hilltop.png', page)
         self.assertIn('rel="icon" type="image/svg+xml" href="/favicon.ico"', page)
         self.assertNotIn('class="tile-hotspots"', page)
         self.assertNotIn('class="rail-hotspots"', page)
@@ -314,20 +316,21 @@ class ShellTests(unittest.TestCase):
         _, _, css = self.get("/assets/atlas.css")
         page = body.decode("utf-8")
         stylesheet = css.decode("utf-8")
-        self.assertIn('/assets/heroes/atlas-home-desktop.png', page)
+        self.assertIn('/assets/atlas-house-hilltop.png', page)
+        self.assertIn('id="home-hero"', page)
+        self.assertIn('data-pos="43.7,56.9"', page)
+        self.assertIn('data-pos="58,38"', page)
+        self.assertIn('data-pos="85.3,43"', page)
+        self.assertIn('data-pos="88,33"', page)
+        self.assertIn('data-pos="90,86"', page)
         self.assertNotIn('<source media="(max-width: 820px)"', page)
         self.assertIn('object-position: left top; transform: none;', stylesheet)
         self.assertNotIn('/assets/heroes/atlas-home-standard.png', page)
-        self.assertIn('.home-artwork { position: absolute; inset: 0 0 16%; width: 100%;', stylesheet)
         self.assertIn('aspect-ratio: 2 / 1;', stylesheet)
-        self.assertIn('object-position: right center; transform: translateX(-6%);', stylesheet)
-        self.assertIn('class="home-system-state"', page)
         self.assertIn('id="metric-environment"', page)
         self.assertIn('id="metric-environment-note"', page)
         self.assertIn('Indoor Range · AQI', page)
-        self.assertLess(page.index('class="home-live-banner"'), page.index('class="home-live-metrics"'))
-        self.assertLess(page.index('class="home-stage"'), page.index('class="home-welcome"'))
-        self.assertLess(page.index('class="home-welcome"'), page.index('class="home-live-banner"'))
+        self.assertLess(page.index('id="home-hero"'), page.index('Energy At A Glance'))
         self.assertIn('grid-template-rows: auto minmax(3rem, 1fr) auto;', stylesheet)
         self.assertIn('height: auto; min-height: 0; grid-template-columns:', stylesheet)
         self.assertIn('width: 4.875rem; height: 4.875rem;', stylesheet)
@@ -490,10 +493,10 @@ class ShellTests(unittest.TestCase):
         source = self.get("/assets/atlas.js")[2].decode("utf-8")
         stylesheet = self.get("/assets/atlas.css")[2].decode("utf-8")
         self.assertEqual(re.findall(r'<h1[^>]*>(.*?)</h1>', page), [
-            "Calendar",
-            "DAEDALUS · SYSTEMS", "SOL · ENERGY", "AEOLUS · ENVIRONMENT",
-            "TITAN · SECURITY", "DEMETER · PANTRY", "ORACLE · TRAVEL",
-            "ARGO · VEHICLES", "VULCAN · MAINTENANCE", "Chat with Atlas", "Notifications",
+            "ATLAS · COMMAND", "Calendar", "ATLAS &middot; HOME", "SOL · ENERGY",
+            "AEOLUS · ENVIRONMENT", "TITAN &middot; SECURITY", "DEMETER · PANTRY",
+            "ORACLE · TRAVEL", "ARGO · VEHICLES", "ATLAS &middot; LIBRARY",
+            "DAEDALUS · SYSTEMS", "VULCAN · MAINTENANCE", "Chat with Atlas", "Notifications",
         ])
         self.assertNotIn('class="eyebrow"', page)
         for removed_id in ("preview-eyebrow", "control-dialog-eyebrow"):
