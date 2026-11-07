@@ -1867,10 +1867,11 @@ function hvacControlState() {
   const available = !hvacUi.needsRefresh && state.home?.status === "healthy" && Boolean(climate.state) && !["unknown", "unavailable"].includes(climate.state);
   const fahrenheit = !climate.unit || ["°F", "F"].includes(climate.unit);
   const target = available && validNumber(climate.target_temperature) ? climate.target_temperature : null;
+  const example = state.home?.example === true || state.home?.demo === true;
   return {
-    climate, available, fahrenheit, target,
+    climate, available, fahrenheit, target, example,
     current: available && validNumber(climate.current_temperature) ? climate.current_temperature : null,
-    editable: available && fahrenheit && target !== null && target >= 60 && target <= 85,
+    editable: available && fahrenheit && target !== null && target >= 60 && target <= 85 && !example,
   };
 }
 
@@ -1883,9 +1884,11 @@ function renderHvacControl() {
     hvacUi.pendingTarget = null;
   }
   const omitted = state.home?.status === "not-included" || state.home?._capture === "illustrative-omitted";
-  const operation = omitted ? "Not included in this illustrative capture" : hvac.available ? safeText(hvac.climate.hvac_action, hvac.climate.state).replaceAll("_", " ") : "Thermostat unavailable";
+  const action = hvac.available ? safeText(hvac.climate.hvac_action, hvac.climate.state).replaceAll("_", " ") : "";
+  const operation = omitted ? "Not included in this illustrative capture" : hvac.example && hvac.available ? `Example · ${action}` : hvac.available ? action : "Thermostat unavailable";
   const message = hvacUi.saving ? "Sending temperature request…"
     : hvacUi.needsRefresh ? hvacUi.message
+    : hvac.example ? "Example reading. Temperature controls are off."
     : !hvac.editable ? (hvac.available && !hvac.fahrenheit ? "Temperature controls require Fahrenheit." : "Waiting for thermostat data. Controls are unavailable.")
     : hvacUi.message || (hvacUi.dirty ? "Not applied yet. Choose Apply Temperature to send." : "");
   for (const node of document.querySelectorAll("[data-hvac-current]")) node.textContent = temperatureText(hvac.current);
