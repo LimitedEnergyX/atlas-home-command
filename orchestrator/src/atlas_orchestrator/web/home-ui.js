@@ -359,7 +359,7 @@
       const panel = document.createElement("div");
       panel.className = "energy-house-panel has-photo";
       panel.innerHTML = `
-        <img src="/assets/atlas-house-hilltop.png" alt="Illustration of the hilltop house and solar array">
+        <img src="/assets/atlas-house-photo.png" alt="Illustration of the hilltop house and solar array">
         <svg class="energy-house-flows" viewBox="0 0 100 56.25" preserveAspectRatio="none" aria-hidden="true">
           <path id="cw-f-solar" class="home-flow home-c-solar" d="M71 13.2 C76 16 81 20 85.3 24.2"></path>
           <path id="cw-f-grid" class="home-flow home-c-grid" d="M96.5 52 C95 42 89 31 85.3 24.2"></path>
@@ -387,73 +387,20 @@
     const gridTxt = gridWord === "Idle" ? "0.00 kW" : kw(parts.grid);
     const pct = parts.ok && num(L?.battery_pct) ? `${Math.round(L.battery_pct)}%` : DASH;
     const pwTxt = !num(parts.pw) || Math.abs(parts.pw) < 0.05 ? pct : `${pct} · ${kw(parts.pw)}`;
-    text("cw-pin-solar", solarTxt);
-    text("cw-pin-house", houseTxt);
-    text("cw-pin-grid", `${gridWord} ${gridTxt}`.trim());
-    text("cw-pin-pw", `${parts.pwState} ${pwTxt}`.trim());
+    text("cw-pin-solar", parts.ok ? solarTxt : DASH);
+    text("cw-pin-house", parts.ok ? houseTxt : DASH);
+    text("cw-pin-grid", parts.ok ? `${gridWord} ${gridTxt}`.trim() : DASH);
+    text("cw-pin-pw", parts.ok ? `${parts.pwState} ${pwTxt}`.trim() : DASH);
     const charge = parts.ok ? L?.vehicle_charge_snapshot : null;
     const hp = parts.ok ? L?.house_pins : null;
     const aOn = Boolean(hp?.athena_fresh) || charge?.charging_state === "Charging";
     const aKw = hp?.athena_fresh && num(hp.athena_kw) ? hp.athena_kw : (aOn && num(charge?.charger_power) ? charge.charger_power : null);
     const aPct = charge && num(charge.battery_level) ? `${Math.round(charge.battery_level)}%` : DASH;
     const aPow = aOn && aKw != null && Number(aKw) > 0.1 ? `${Number(aKw).toFixed(2)} kW` : "0.00 kW";
-    text("cw-pin-athena", `${aOn ? "House → Athena" : "Athena"} ${aPct} · ${aPow}`);
+    text("cw-pin-athena", parts.ok ? `${aOn ? "House → Athena" : "Athena"} ${aPct} · ${aPow}` : DASH);
     const pulse = window.atlasHousePulseHome;
     if (typeof pulse === "function") pulse("cw-f-house", parts.houseKw);
-    fillCommandChrome(L, parts, { solarTxt, houseTxt, gridWord, gridTxt, pct, pwTxt, aOn, aPct, aPow });
-    const tile = (cls, label, value, note) => `<article class="cw-tile ${cls}"><small>${label}</small><b>${value}</b><span>${note}</span></article>`;
-    tiles.className = "cw-bigrow";
-    tiles.innerHTML = [
-      tile("solar", "Solar", solarTxt, parts.solar != null && parts.solar > 0.05 ? "Producing" : "Idle"),
-      tile("home", "House", houseTxt, "House Load"),
-      tile("grid", "Grid", gridTxt, gridWord),
-      tile("pw", "Powerwall", pct, parts.pwState),
-    ].join("");
-  }
-
-  function fillCommandChrome(L, parts, view) {
-    const na = "Not available";
-    const statusEl = $("cw-status");
-    const overall = $("overall-label")?.textContent || "";
-    if (statusEl) {
-      const ready = overall && !/connect|loading|waiting/i.test(overall);
-      statusEl.textContent = ready ? overall : (parts.ok ? "Online" : "Readings unavailable");
-      statusEl.className = `cw-overall ${parts.ok ? "ok" : "warn"}`;
-    }
-    const clock = $("cw-clock");
-    if (clock) clock.textContent = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
-    const updated = $("cw-updated");
-    if (updated) updated.textContent = L?.polled_at ? `Energy ${new Date(L.polled_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })}` : "";
-    const put = (id, value) => { const n = $(id); if (n) n.textContent = value; };
-    const hvac = $("metric-hvac")?.textContent;
-    put("cw-s-indoor", na);
-    put("cw-s-outdoor", na);
-    put("cw-s-hvacmode", hvac && hvac !== "—" && hvac !== DASH ? hvac : na);
-    put("cw-s-pw", parts.ok && num(L?.battery_pct) ? `${Math.round(L.battery_pct)}% ${parts.pwState}` : na);
-    put("cw-s-grid", parts.ok ? view.gridWord : na);
-    put("cw-s-ups", na);
-    put("cw-s-athena", view.aOn ? `${view.aPct} · ${view.aPow}` : na);
-    put("cw-s-lights", na);
-    put("cw-s-garage", na);
-    put("cw-s-leak", na);
-    const root = $("cw-root");
-    if (!root) return;
-    if (!root.dataset.publicBoard) {
-      root.dataset.publicBoard = "1";
-      root.innerHTML = `
-        <section class="cw-card cw-batt" aria-label="Powerwall"><h3>Powerwall</h3><p class="cw-state" id="cw-card-pw"></p><p class="cw-note">From the energy reading. No Powerwall command is sent.</p></section>
-        <section class="cw-card cw-athena" aria-label="Athena"><h3>Athena</h3><p class="cw-state" id="cw-card-athena"></p><p class="cw-note">Read only. No wake or vehicle command.</p></section>
-        <section class="cw-card cw-alertcard" aria-label="Alerts"><h3>Alerts</h3><p class="cw-okline" id="cw-card-alerts">No active alerts in this view.</p></section>
-        <section class="cw-card cw-trends" aria-label="Current power"><h3>Current Power</h3><div id="cw-card-power"></div><p class="cw-note">Same reading as Home and Energy. Not a history chart.</p></section>
-        <section class="cw-card cw-systems" aria-label="Systems"><h3>Systems</h3><p class="cw-state" id="cw-card-systems"></p></section>
-        <section class="cw-card cw-home" aria-label="Home readings"><h3>Home</h3><p class="cw-note">Indoor temperature, lights, garage, and leaks stay blank until the command-center adapter is connected. They are not estimated.</p></section>
-        <section class="cw-card cw-events-card" aria-label="Adapter"><h3>Adapter</h3><p class="cw-note">Full strip automation is command-center.js, which is not in this public package. This view uses Atlas status and the energy reading only.</p></section>`;
-    }
-    put("cw-card-pw", parts.ok ? `${view.pct} · ${parts.pwState} ${view.pwTxt}` : na);
-    put("cw-card-athena", view.aOn ? `${view.aPct} · ${view.aPow}` : na);
-    const power = $("cw-card-power");
-    if (power) power.textContent = `Solar ${view.solarTxt} · House ${view.houseTxt} · EV ${view.aPow} · Grid ${view.gridWord} ${view.gridTxt} · Powerwall ${view.pct}`;
-    put("cw-card-systems", overall || na);
+    if (typeof window.AtlasCommandFit === "function") window.AtlasCommandFit();
   }
 
   function ensureHomeTabVisible() {

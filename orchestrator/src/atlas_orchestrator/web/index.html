@@ -13,6 +13,7 @@
     <script src="/assets/maintenance-ui.js?v=20260907-maintenance" defer></script>
     <script src="/assets/calendar-ui.js?v=20260924" defer></script>
     <script src="/assets/home-ui.js?v=20261106-4rails13" defer></script>
+    <script src="/assets/command-center.js?v=20261103-bluetti3" defer></script>
     <script src="/assets/atlas.js?v=20261106-4rails13" defer></script>
   </head>
   <body>
@@ -115,7 +116,7 @@
                     <div class="home-solar-pill" id="home-solar-pill">—</div>
                   </div>
                   <div class="home-house" id="home-house" title="Open Energy" role="link" tabindex="0">
-                    <img src="/assets/atlas-house-hilltop.png" alt="Illustration of the hilltop house and solar array">
+                    <img src="/assets/atlas-house-photo.png" alt="Illustration of the hilltop house and solar array">
                     <div class="home-layer home-l-night"></div><div class="home-layer home-l-night2"></div>
                     <i class="home-glow" data-pos="34.2,59.7"></i><i class="home-glow" data-pos="44.3,57"></i><i class="home-glow" data-pos="59.8,49.5"></i><i class="home-glow" data-pos="67.4,48.4"></i><i class="home-glow" data-pos="76.3,46.2"></i><i class="home-glow" data-pos="82.4,44.6"></i>
                     <i class="home-glow lamp" data-lamp="driveway" data-pos="15,53"></i>
@@ -250,7 +251,7 @@
           <header class="page-heading std-hero std-energy"><div><span class="module-kicker">Solar, Powerwall, And Grid</span><h1>SOL · ENERGY</h1><p id="energy-observed">Live Power · Tesla History</p></div></header>
           <section class="energy-exterior" id="energy-exterior-view" aria-label="House energy overview">
             <div class="energy-house-panel has-photo" id="energy-house-view">
-              <img id="energy-house-image" src="/assets/atlas-house-hilltop.png" alt="Illustration of the hilltop house and solar array">
+              <img id="energy-house-image" src="/assets/atlas-house-photo.png" alt="Illustration of the hilltop house and solar array">
               <div class="energy-house-night" aria-hidden="true"></div>
               <div class="energy-house-glow" aria-hidden="true"><i class="win w1"></i><i class="win w2"></i><i class="win p1"></i><i class="win p2"></i><i class="win p3"></i><i class="win p4"></i><i class="win p5"></i></div>
               <svg class="energy-house-flows" viewBox="0 0 100 56.25" preserveAspectRatio="none" aria-hidden="true">
@@ -394,12 +395,12 @@
                 <div class="weather-fact-grid" id="weather-fact-grid"><p class="empty-state">Loading Current Conditions…</p></div>
               </article>
               <article class="weather-radar-card">
-                <div><h3>Texas Radar</h3><span>NWS Southern Plains · Auto-Playing · All Of Texas</span></div>
+                <div><h3>Texas Radar</h3><span>NWS Southern Plains · Auto-Playing · Full Frame</span></div>
                 <a class="weather-radar-link" href="https://radar.weather.gov/region/tx/standard" target="_blank" rel="noopener" aria-label="Open the National Weather Service Texas regional radar">
                   <img id="weather-radar-image" alt="National Weather Service Southern Plains radar loop with the state of Texas visible. Not a household radar.">
                   <span>National Weather Service</span>
                 </a>
-                <p class="weather-radar-credit">Source: NOAA National Weather Service public Southern Plains composite, centered so Texas is visible. No household coordinates. The image address is set by the local page script.</p>
+                <p class="weather-radar-credit">Source: NOAA National Weather Service public Southern Plains composite. The page shows the full frame, not a crop. No household coordinates. The image address is set by the local page script.</p>
               </article>
             </div>
             <div class="weather-forecast-block"><div class="weather-block-heading"><div><h3>Next 24 Hours</h3><span>Temperature, Precipitation, And Wind</span></div><span id="weather-hourly-summary">Loading Forecast…</span></div><div class="weather-hourly-list" id="weather-hourly-list"><p class="empty-state">Loading Hourly Forecast…</p></div></div>

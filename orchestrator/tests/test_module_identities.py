@@ -22,7 +22,7 @@ class IdentityTests(unittest.TestCase):
                 if module == "home":
                     self.assertIn('id="panel-home"', html)
                     self.assertIn('id="tab-home"', html)
-                    self.assertIn("/assets/atlas-house-hilltop.png", html)
+                    self.assertIn("/assets/atlas-house-photo.png", html)
                     continue
                 candidates = re.findall(r'<button[^>]*data-tab-target="' + module + r'"[^>]*>.*?</button>', html)
                 tile = next(candidate for candidate in candidates if 'class="home-mod"' in candidate)

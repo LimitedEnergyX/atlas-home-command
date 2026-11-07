@@ -5068,63 +5068,58 @@ body.home-active #panel-home {
 /* t1126u: HOUSE line pulse = Command .flow-pulse mechanism (pathLength 100, dash 6 44, offset 100->0 = start->end, porch->HOUSE) */
 path.house-pulse { fill:none; stroke:transparent; opacity:0; animation:none; }
 path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; opacity:1; stroke-dasharray:6 44; stroke-dashoffset:100; animation:atlas-flow-pulse var(--pulse-dur, 3s) linear infinite; filter:drop-shadow(0 0 1px #4a7dff) drop-shadow(0 0 3px #4a7dff); }
-/* t1126u: Command only - slimmer power tiles so the house photo (flex 1 1 auto, 100cqh) gains height */
-@media (min-width: 1601px) { #cw-power-tiles .cw-tile { padding: .18em .5em; } #cw-power-tiles .cw-tile small { font-size: .72em; } #cw-power-tiles .cw-tile b { line-height: 1.15; } #cw-power-tiles .cw-tile .cw-meter { margin-top: .12em; } #panel-command .cw-house-slot .energy-house-panel { margin-bottom: .35em; } }
-
-
-/* 2026-11-06 public release: Command house grows by slimming the tiles under it at every width, not only 1601px. */
-#panel-command .cw-power { display: flex; flex-direction: column; min-height: 0; }
-#panel-command .cw-house-slot { flex: 1 1 auto; min-height: 12rem; display: flex; align-items: flex-start; justify-content: center; }
+/* 2026-11-06: the house uses the power column. The 640×360 cap and the 68% slot cap left a gap. Slim the four readings so the photo can grow at every width. */
+#panel-command .cw-power { display: flex; flex-direction: column; min-height: 0; overflow: hidden; justify-content: flex-start; }
+#panel-command .cw-house-slot {
+  flex: 0 1 auto;
+  width: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
 #panel-command .cw-house-slot .energy-house-panel,
 #panel-command .cw-house-slot .energy-house-panel.has-photo {
-  width: min(100%, 920px);
-  max-width: 100%;
+  width: 100%;
+  max-width: none;
   max-height: none;
-  aspect-ratio: 16 / 9;
-  margin: 0 auto .35em;
+  height: auto;
+  aspect-ratio: 1090 / 613;
+  margin: 0 auto .25em;
   flex: 1 1 auto;
 }
-#cw-power-tiles { flex: 0 0 auto; }
-#cw-power-tiles .cw-tile { padding: .22em .45em; }
-#cw-power-tiles .cw-tile small { font-size: clamp(11px, .85em, 13px); line-height: 1.2; }
-#cw-power-tiles .cw-tile b { font-size: clamp(15px, 1.15em, 22px); line-height: 1.15; }
-#cw-power-tiles .cw-tile .cw-meter { margin-top: .1em; height: .28em; }
-#panel-command .cw-house-slot .energy-pin { position: absolute; transform: none; }
-#panel-command .cw-power { overflow: visible; }
-#panel-command .cw-house-slot { flex: 1 1 auto; max-height: 68%; }
-#panel-command .cw-house-slot .energy-house-panel,
-#panel-command .cw-house-slot .energy-house-panel.has-photo { width: 100%; max-width: none; max-height: 100%; }
-#cw-power-tiles { position: relative; z-index: 2; }
-@media (max-width: 900px) {
-  #panel-command { padding-bottom: 7.5rem; }
+#panel-command #cw-power-tiles { flex: 0 0 auto; }
+#panel-command #cw-power-tiles .cw-big { padding: .18em .4em; }
+#panel-command #cw-power-tiles .cw-big strong { font-size: 1.35em; line-height: 1.05; }
+#panel-command #cw-power-tiles .cw-big span { min-height: 0; font-size: .75em; }
+#panel-command #cw-power-tiles .cw-tile { padding: .14em .4em; }
+#panel-command #cw-power-tiles .cw-tile b { font-size: .95em; line-height: 1.1; }
+#panel-command #cw-power-tiles .cw-kv { padding: .12em 0; font-size: .82em; }
+@media (min-width: 1601px) {
+  #panel-command .cw-layout { grid-template-columns: minmax(0, min(46vw, 980px)) repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 768px) {
-  #panel-command .cw-house-slot { max-height: none; }
+@media (max-width: 900px) {
   #panel-command .cw-house-slot .energy-house-panel,
-  #panel-command .cw-house-slot .energy-house-panel.has-photo { width: 100%; max-height: 220px; }
-  #cw-power-tiles.cw-bigrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #panel-command .energy-pin { max-width: 40%; font-size: 9px; line-height: 1.1; transform: none !important; }
-  #cw-house-slot .pin-solar { left: 62% !important; top: 8% !important; }
-  #cw-house-slot .pin-home { left: 46% !important; top: 42% !important; }
-  #cw-house-slot .pin-battery { left: 68% !important; top: 62% !important; }
-  #cw-house-slot .pin-grid { left: auto !important; right: 4px !important; top: auto !important; bottom: 6px !important; }
-  #cw-house-slot .pin-athena { left: 4px !important; top: 68% !important; }
+  #panel-command .cw-house-slot .energy-house-panel.has-photo { max-height: none; }
 }
 
-/* Statewide Texas radar: the NWS Southern Plains frame already includes the whole state. Do not crop it. */
-#panel-environment .weather-overview-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: stretch; }
+/* Radar: the whole NWS bitmap stays inside the viewport. Cover plus a short card was clipping the south of Texas. */
+#panel-environment .weather-overview-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: start; }
 #panel-environment .weather-now-primary strong { font-size: clamp(48px, 4.2vw, 84px); }
 #panel-environment .weather-now-primary h3 { font-size: clamp(22px, 2vw, 32px); }
 #panel-environment .weather-fact-grid strong { font-size: clamp(18px, 1.5vw, 26px); }
 #panel-environment .weather-fact-grid span { font-size: clamp(13px, 1.1vw, 16px); }
-#panel-environment .weather-radar-card { height: min(78vh, 900px); }
-#panel-environment .weather-radar-link { min-height: 480px; background: #d7e0e8; }
+#panel-environment .weather-radar-card { height: auto; overflow: visible; display: block; align-self: start; }
+#panel-environment .weather-radar-link { display: block; height: auto; min-height: 0; overflow: visible; background: #d7e0e8; }
 #panel-environment .weather-radar-link img {
+  display: block;
   width: 100%;
-  height: 100%;
-  max-height: none;
-  object-fit: contain !important;
-  object-position: center center !important;
+  height: calc(100dvh - 280px);
+  max-height: calc(100dvh - 280px);
+  object-fit: contain;
+  object-position: center center;
   background: #d7e0e8;
 }
 #panel-environment .weather-radar-credit { margin: 0; padding: 8px 14px 12px; color: var(--muted); font-size: 15px; line-height: 1.4; }
@@ -5141,7 +5136,7 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
 .travel-example-banner[hidden] { display: none; }
 @media (max-width: 800px) {
   #panel-environment .weather-overview-grid { grid-template-columns: 1fr; }
-  #panel-environment .weather-radar-card { height: min(78vh, 640px); }
+  #panel-environment .weather-radar-card { height: auto; }
   #panel-environment .weather-now-primary strong { font-size: clamp(42px, 12vw, 64px); }
   #panel-command .cw-wrap { display: flex; flex-direction: column; }
   #panel-command .cw-header { display: contents; }

@@ -672,7 +672,7 @@
             ${gaugeHtml("ath", "Athena", "Model Y", "solh-ath-fill", "solh-ath-pct", "solh-ath-sub")}
             ${gaugeHtml("bl", "Bluetti", "Elite 300", "solh-bl-fill", "solh-bl-pct", "solh-bl-sub")}
             <div class="solh-house" id="solh-house">
-              <img src="/assets/atlas-house-hilltop.png" alt="Illustration of the hilltop house and solar array">
+              <img src="/assets/atlas-house-photo.png" alt="Illustration of the hilltop house and solar array">
               <div class="solh-layer solh-l-night"></div><div class="solh-layer solh-l-night2"></div>
               <i class="solh-glow" data-pos="34.2,59.7"></i><i class="solh-glow" data-pos="44.3,57"></i><i class="solh-glow" data-pos="59.8,49.5"></i><i class="solh-glow" data-pos="67.4,48.4"></i><i class="solh-glow" data-pos="76.3,46.2"></i><i class="solh-glow" data-pos="82.4,44.6"></i>
               <svg class="solh-flows" viewBox="0 0 100 56.25" preserveAspectRatio="none" aria-hidden="true">
