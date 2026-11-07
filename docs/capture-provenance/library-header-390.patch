@@ -1,0 +1,19 @@
+--- a/src/web/library/library.css
++++ b/src/web/library/library.css
+@@ -27,7 +27,15 @@
+ .mark{width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(103,232,249,.5);border-radius:50%;font:24px Georgia,serif;
+ background:radial-gradient(circle,rgba(103,232,249,.22),transparent 62%)}
+ .bt strong{display:block;letter-spacing:.28em;font-size:15px}.bt small{display:block;color:var(--muted);font-size:9px;letter-spacing:.2em}
+-.lbar-status{flex:1;display:flex;justify-content:flex-end}
++.lbar-status{flex:1;display:flex;justify-content:flex-end;min-width:0}
++.tb{flex:none}
++@media (max-width:700px){
++  .lbar{flex-wrap:wrap;align-items:center;row-gap:6px}
++  .lbar>.brand{flex:0 1 auto;min-width:0}
++  .lbar>.lbar-status{flex:1 0 100%;order:3;justify-content:flex-start;min-width:0}
++  .lbar>.tb{margin-left:auto;order:2;flex:none}
++  .lbar .chip{max-width:100%;white-space:normal;line-height:1.25;overflow:visible;text-overflow:clip}
++}
+ .tb{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 12px;border:1px solid var(--line);
+ border-radius:12px;background:var(--panel);color:var(--ink);text-decoration:none;font-size:17px;cursor:pointer}
+ .tb span{font-size:14px}
