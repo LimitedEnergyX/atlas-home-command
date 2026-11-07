@@ -1882,7 +1882,8 @@ function renderHvacControl() {
     hvacUi.tone = "is-success";
     hvacUi.pendingTarget = null;
   }
-  const operation = hvac.available ? safeText(hvac.climate.hvac_action, hvac.climate.state).replaceAll("_", " ") : "Thermostat unavailable";
+  const omitted = state.home?.status === "not-included" || state.home?._capture === "illustrative-omitted";
+  const operation = omitted ? "Not included in this illustrative capture" : hvac.available ? safeText(hvac.climate.hvac_action, hvac.climate.state).replaceAll("_", " ") : "Thermostat unavailable";
   const message = hvacUi.saving ? "Sending temperature request…"
     : hvacUi.needsRefresh ? hvacUi.message
     : !hvac.editable ? (hvac.available && !hvac.fahrenheit ? "Temperature controls require Fahrenheit." : "Waiting for thermostat data. Controls are unavailable.")
@@ -1973,6 +1974,88 @@ async function applyTemperature() {
   }
 }
 
+function railPhrase(payload) {
+  if (!payload) return "Unavailable";
+  if (payload.status === "not-included" || payload._capture === "illustrative-omitted") return "Not included in this illustrative capture";
+  if (payload.status === "unavailable" || payload.status === "error") return "Unavailable";
+  return "";
+}
+function setHomeRail(id, text) {
+  const list = document.getElementById(id);
+  if (!list) return;
+  list.replaceChildren();
+  const item = document.createElement("li");
+  item.className = "home-rail-empty";
+  item.textContent = text;
+  list.append(item);
+}
+function renderHomeRailsFrom(calendar, maintenance) {
+  const travelPhrase = railPhrase(state.travel);
+  if (travelPhrase) setHomeRail("home-rail-trips", travelPhrase);
+  else {
+    const trips = Array.isArray(state.travel?.trips) ? state.travel.trips.slice(0, 3) : [];
+    if (!trips.length) setHomeRail("home-rail-trips", "No entries in this reading");
+    else {
+      const list = document.getElementById("home-rail-trips");
+      if (list) {
+        list.replaceChildren(...trips.map((trip) => {
+          const item = document.createElement("li");
+          item.textContent = safeText(trip.title || trip.name, "Trip");
+          return item;
+        }));
+      }
+    }
+  }
+  const taskPhrase = railPhrase(calendar);
+  if (taskPhrase) setHomeRail("home-rail-tasks", taskPhrase);
+  else {
+    const events = Array.isArray(calendar?.events) ? calendar.events.filter((event) => event.status !== "canceled").slice(0, 3) : [];
+    if (!events.length) setHomeRail("home-rail-tasks", "No entries in this reading");
+    else {
+      const list = document.getElementById("home-rail-tasks");
+      if (list) {
+        list.replaceChildren(...events.map((event) => {
+          const item = document.createElement("li");
+          item.textContent = safeText(event.title, "Task");
+          return item;
+        }));
+      }
+    }
+  }
+  const servicePhrase = railPhrase(maintenance);
+  if (servicePhrase) setHomeRail("home-rail-service", servicePhrase);
+  else {
+    const records = Array.isArray(maintenance?.records) ? maintenance.records.filter((item) => !item.completed_at).slice(0, 3) : [];
+    if (!records.length) setHomeRail("home-rail-service", "No entries in this reading");
+    else {
+      const list = document.getElementById("home-rail-service");
+      if (list) {
+        list.replaceChildren(...records.map((item) => {
+          const row = document.createElement("li");
+          row.textContent = safeText(item.task || item.equipment, "Service");
+          return row;
+        }));
+      }
+    }
+  }
+}
+async function renderHomeRails() {
+  let calendar = { status: "unavailable" };
+  let maintenance = { status: "unavailable" };
+  try {
+    const [calendarResponse, maintenanceResponse] = await Promise.all([
+      fetchSnapshot("/v1/calendar"),
+      fetchSnapshot("/v1/maintenance"),
+    ]);
+    calendar = calendarResponse?.ok ? await calendarResponse.json() : { status: "unavailable" };
+    maintenance = maintenanceResponse?.ok ? await maintenanceResponse.json() : { status: "unavailable" };
+  } catch (_error) {
+    calendar = { status: "unavailable" };
+    maintenance = { status: "unavailable" };
+  }
+  renderHomeRailsFrom(calendar, maintenance);
+}
+
 function renderError() {
   const lastObserved = state.status?.observed_at;
   state.status = null;
@@ -1981,6 +2064,8 @@ function renderError() {
   document.getElementById("last-updated").textContent = lastObserved ? `Last Seen ${humanTime(lastObserved)}` : "Waiting For Local API";
   for (const id of ["metric-hvac", "metric-environment", "metric-pantry", "metric-energy"]) document.getElementById(id).textContent = "—";
   renderSecurityPage();
+  renderHvacControl();
+  renderHomeRails();
 }
 
 async function fetchSnapshot(url) {
@@ -2044,6 +2129,7 @@ async function refresh() {
     renderError();
   } finally {
     renderHvacControl();
+    renderHomeRails();
     button.disabled = false;
     button.textContent = "Refresh Status";
   }

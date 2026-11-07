@@ -143,19 +143,24 @@
     const set = (id, html, tone) => { const n = $(id); if (!n) return; n.innerHTML = TC(html); if (tone !== undefined) n.dataset.tone = tone; };
     set("cw-s-indoor", !hs ? DASH : `${num(cl.current_temperature, 1)}${DEG}<em>${num(val("humidity", "living-room-humidity"), 0)}% RH</em>`);
     set("cw-s-hvacmode", !hs ? DASH : `${esc(String(cl.state || DASH).replace(/_/g, " "))}${cl.hvac_action ? `<em>${esc(String(cl.hvac_action).replace(/_/g, " "))}</em>` : ""}`);
-    set("cw-s-outdoor", !hs ? DASH : `${num(val("outdoor", "outdoor-temperature"), 0)}${DEG}<em>AQI ${num(val("outdoor", "outdoor-aqi"), 0)}</em>`);
-    set("cw-s-pw", !en ? DASH : `${num(e.battery_pct, 0)}%<em>${e.battery_kw > 0.05 ? "discharging" : e.battery_kw < -0.05 ? "charging" : "idle"}</em>`, !en ? "" : e.battery_pct < 25 ? "bad" : "");
+    set("cw-s-outdoor", !hs ? DASH : `${num(val("outdoor", "outdoor-temperature"), 1)}${DEG}<em>${num(val("outdoor", "outdoor-humidity"), 0)}% RH${DOT}AQI ${num(val("outdoor", "outdoor-aqi"), 0)}</em>`);
+    set("cw-s-pw", !en ? DASH : `${num(e.battery_pct, 1)}%<em>${e.battery_kw > 0.05 ? "discharging" : e.battery_kw < -0.05 ? "charging" : "idle"}</em>`, !en ? "" : e.battery_pct < 25 ? "bad" : "");
     set("cw-s-grid", !en ? DASH : e.grid_up === false ? "DOWN" : "Up", !en ? "" : e.grid_up === false ? "bad" : "ok");
     set("cw-s-ups", `${esc(c.ups?.power || DASH)}${c.ups?.chargePercent != null && c.ups.chargePercent !== "" && Number.isFinite(Number(c.ups.chargePercent)) ? `<em>${num(c.ups.chargePercent, 0)}%</em>` : ""}`, c.ups?.status && isProblem(c.ups.status) ? "bad" : "ok");
     set("cw-s-athena", !en ? DASH : `${v.battery_level ?? DASH}%<em>${esc(athenaState(v))}</em>`);
     set("cw-s-lights", !he ? DASH : `${on.length}/${items.length}<em>${on.length ? esc(on.map((x) => (window.AtlasHomeControls ? window.AtlasHomeControls.name(x) : x.name)).join(", ")) : "All Off"}</em>`);
-    set("cw-s-garage", !he ? DASH : garage ? esc(String(garage.state || DASH)) : DASH, !he ? "" : garage && st(garage) !== "closed" ? "warn" : "ok");
-    set("cw-s-leak", !he ? DASH : wet.length ? `WET<em>${esc(wet.map((x) => x.name).join(", "))}</em>` : `Dry<em>${leaks.length} sensors</em>`, !he ? "" : wet.length ? "bad" : "ok");
-    const outside = items.filter((x) => OUTSIDE.includes(x.entity_id));
+    const withheld = he?._protected_omitted || {};
+    const sensorText = (list, key) => withheld[key] ? "Withheld / Not included" : (Array.isArray(list) && list.length ? "" : "Unknown / No sensors");
+    const garageText = !he ? DASH : sensorText(g.openings, "openings") || (garage ? esc(String(garage.state || DASH)) : "Unknown / No sensors");
+    const leakText = !he ? DASH : sensorText(g.safety, "safety") || (wet.length ? `WET<em>${esc(wet.map((x) => x.name).join(", "))}</em>` : `Dry<em>${leaks.length} sensors</em>`);
+    const garageNode = $("cw-s-garage"); if (garageNode) { garageNode.textContent = garageText; garageNode.dataset.tone = garage && st(garage) !== "closed" && !withheld.openings ? "warn" : ""; }
+    const leakNode = $("cw-s-leak"); if (leakNode) { leakNode.innerHTML = withheld.safety || !(g.safety || []).length ? leakText : TC(leakText); leakNode.dataset.tone = wet.length && !withheld.safety ? "bad" : ""; }
+    const anonymous = items.length > 0 && items.every((x) => /\.control_\d+$/.test(String(x.entity_id || "")));
+    const outside = anonymous ? [] : items.filter((x) => OUTSIDE.includes(x.entity_id));
     const b1 = $("cw-l-outon"), b2 = $("cw-l-outoff"), b3 = $("cw-l-dark");
-    if (b1) b1.disabled = !outside.length || outside.every((x) => st(x) === "on");
-    if (b2) b2.disabled = !outside.length || outside.every((x) => st(x) === "off");
-    if (b3) b3.disabled = !items.length || items.every((x) => st(x) === "off");
+    if (b1) b1.disabled = anonymous || !outside.length || outside.every((x) => st(x) === "on");
+    if (b2) b2.disabled = anonymous || !outside.length || outside.every((x) => st(x) === "off");
+    if (b3) b3.disabled = anonymous || !items.length || items.every((x) => st(x) === "off");
   }
   async function lightAction(kind, button) {
     const api = window.AtlasHomeControls; if (!api) return;
@@ -284,7 +289,7 @@
   const saneEnv = (id, v) => Number.isFinite(v) && !SENTINEL.includes(v) && (/temp/.test(id) ? v >= -40 && v <= 140 : /humid/.test(id) ? v >= 0 && v <= 100 : true);
   const envSeries = (env, id, label, color) => { const s = (env?.series || []).find((x) => x.id === id); return { label, color, points: (s?.points || []).map((p) => ({ t: new Date(p.at).getTime(), v: Number(p.value) })).filter((p) => saneEnv(id, p.v)) }; };
   const pwSeries = (hist, field, label, color, f = (v) => v) => ({ label, color, points: (hist?.points || []).map((p) => ({ t: new Date(p.at).getTime(), v: p[field] == null ? NaN : f(Number(p[field])) })) });
-  let trendsAt = 0, trendsHtml = "";
+  let trendsAt = 0, trendsHtml = "", bluettiReading = null;
   // 2026-11-03 bluetti-ui3: UPS (collector history, change points) and Athena (saved periodic Basic snapshots; no new Tesla polling).
   // Keep the last 24 h plus the latest reading before the window so the step line starts at the real prior value.
   const win24 = (pts) => { const t0 = Date.now() - 24 * 3600000, ok = pts.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.v)).sort((a, b) => a.t - b.t); const seed = ok.filter((p) => p.t < t0).pop(); return [...(seed ? [seed] : []), ...ok.filter((p) => p.t >= t0)]; };
@@ -293,6 +298,8 @@
   async function trends(ccP, enP) {
     if (trendsHtml && Date.now() - trendsAt < 10 * 60000) return trendsHtml;
     const [env, hist, bl, ccT, enT] = await Promise.all([get("/v1/home/environment/history"), get("/v1/energy/history?range=day"), get("/v1/energy/bluetti?range=day"), ccP || get("/v1/command-center"), enP || get("/v1/energy/status")]); // 2026-11-03 bluetti-ui: + Bluetti trend
+    const lastBl = Array.isArray(bl?.points) ? bl.points[bl.points.length - 1] : null;
+    bluettiReading = bl?.current || lastBl ? { ...(bl.current || {}), battery_pct: bl.current?.battery_pct ?? lastBl?.battery_pct, observed_at: bl.current?.observed_at || lastBl?.at, available: bl.status !== "unavailable" } : null;
     trendsHtml = `<div class="cw-charts">
       ${chart("Temperature", DEG, [envSeries(env, "living-room-temperature", "Living room", "#73bf69"), envSeries(env, "primary-bedroom-temperature", "Bedroom", "#8ab8ff"), envSeries(env, "outdoor-temperature", "Outdoor", "#ff9830")], { span: 6 })}
       ${chart("Humidity", "%", [envSeries(env, "living-room-humidity", "Living room", "#73bf69"), envSeries(env, "air-monitor-humidity", "Air monitor", "#b877d9"), envSeries(env, "east-hallway-humidity", "Hallway", "#5794f2")], { span: 10, d: 0 })}
@@ -350,6 +357,10 @@
     if (!hs) warn.push("Home status was not in this snapshot");
     if (!he) warn.push("Home entities were not in this snapshot");
     if (!en) warn.push("Energy status was not in this snapshot");
+    const omitted = he?._protected_omitted || {};
+    if (omitted.openings) warn.push("Openings withheld / not included");
+    if (omitted.safety) warn.push("Safety withheld / not included");
+    if (omitted.security) warn.push("Security withheld / not included");
     const info = [];
     if (c.pendingReboot?.status === "info") info.push("Windows File Cleanup At Next Restart (Not A Warning)");
 
@@ -360,20 +371,27 @@
     $("cw-clock").textContent = new Date().toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     $("cw-weather").textContent = out["outdoor-temperature"] !== undefined ? `${num(out["outdoor-temperature"], 0)}${DEG}F${DOT}${num(out["outdoor-humidity"], 0)}% RH${DOT}AQI ${num(out["outdoor-aqi"], 0)}` : `Weather ${DASH}`;
     $("cw-uptime").textContent = sys.uptimeHours !== undefined ? `Atlas up ${num(sys.uptimeHours, 1)} h${DOT}boot ${tm(sys.lastBoot)}` : `Uptime ${DASH}`;
-    $("cw-updated").textContent = c._fixture?.captured_at_ct
-      ? `Captured historical snapshot ${c._fixture.captured_at_ct} · not live`
-      : `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
+    const stamp = (payload) => payload?._fixture?.captured_at_ct || "";
+    const readingAt = [stamp(hs), stamp(he), stamp(en), stamp(as)].find(Boolean) || "";
+    const systemAt = stamp(c);
+    if (readingAt || systemAt) {
+      const bits = [];
+      if (readingAt) bits.push(`Readings snapshot ${readingAt}`);
+      if (systemAt && systemAt !== readingAt) bits.push(`UPS/system snapshot ${systemAt}`);
+      else if (systemAt && !readingAt) bits.push(`Captured historical snapshot ${systemAt}`);
+      $("cw-updated").textContent = `${bits.join(" · ")} · not live`;
+    } else $("cw-updated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
     stripState = { hs, he, en, c };
     renderStrip();
 
     // power tiles (the live house flow view above them is the Energy tab's own node)
     const pins = e.house_pins || {}, t = e.today || {};
     const battKw = !en ? null : typeof e.battery_kw === "number" ? e.battery_kw : null;
-    const battFlow = !en ? DASH : battKw !== null ? (battKw > 0.05 ? `Discharging ${num(battKw, 1)} kW` : battKw < -0.05 ? `Charging ${num(-battKw, 1)} kW` : "Idle") : (pins.battery_discharge_kw > 0.01 ? `Discharging ${num(pins.battery_discharge_kw, 1)} kW` : pins.battery_charge_kw > 0.01 ? `Charging ${num(pins.battery_charge_kw, 1)} kW` : "Idle");
+    const battFlow = !en ? DASH : battKw !== null ? (battKw > 0.05 ? `Discharging ${num(battKw, 2)} kW` : battKw < -0.05 ? `Charging ${num(-battKw, 2)} kW` : "Idle") : (pins.battery_discharge_kw > 0.01 ? `Discharging ${num(pins.battery_discharge_kw, 2)} kW` : pins.battery_charge_kw > 0.01 ? `Charging ${num(pins.battery_charge_kw, 2)} kW` : "Idle");
     const gridTxt = e.grid_up === false ? "GRID DOWN" : e.grid_kw > 0.05 ? "importing" : e.grid_kw < -0.05 ? "exporting" : "idle";
     const tiles = $("cw-power-tiles");
     const modeName = (m) => ({ self_consumption: "Self-Powered", autonomous: "Time-Based", backup: "Backup Only" })[String(m || "")] || String(m || DASH).replace(/_/g, " ");
-    if (tiles) tiles.innerHTML = en ? `<div class="cw-bigrow">${big("Solar", num(e.solar_kw, 2), "kW", `Today ${num(t.solar_kwh, 1)} kWh`, "solar")}${big("Home", num(e.home_kw, 2), "kW", `Today ${num(t.home_kwh, 1)} kWh`, "home")}${big("Grid", num(Math.abs(e.grid_kw), 2), "kW", gridTxt, e.grid_up === false ? "bad" : "grid")}${big("Powerwall", num(e.battery_pct, 0), "%", battFlow, "pw")}</div>
+    if (tiles) tiles.innerHTML = en ? `<div class="cw-bigrow">${big("Solar", num(e.solar_kw, 2), "kW", `Today ${num(t.solar_kwh, 1)} kWh`, "solar")}${big("Home", num(e.home_kw, 2), "kW", `Today ${num(t.home_kwh, 1)} kWh`, "home")}${big("Grid", num(Math.abs(e.grid_kw), 2), "kW", gridTxt, e.grid_up === false ? "bad" : "grid")}${big("Powerwall", num(e.battery_pct, 1), "%", battFlow, "pw")}</div>
       <div class="cw-grid3">${kv("Grid In / Out", `${num(t.import_kwh, 1)} / ${num(t.export_kwh, 1)} kWh`)}${kv("Solar Value", `$${num(t.solar_savings, 2)}`)}${kv("Bill Estimate", e.monthly ? `$${num(e.monthly.estimated_bill, 0)}${DOT}${e.monthly.days_remaining}d Left` : DASH)}${kv("Reserve / Mode", `${num(e.reserve_pct, 0)}%${DOT}${esc(modeName(e.mode))}`)}${kv("Grid", e.grid_up === false ? "DOWN" : "Up", e.grid_up === false ? "bad" : "ok")}${kv("Polled", ago(e.polled_at))}</div>` : `<p class="cw-empty">Energy API Unavailable</p>`;
 
     // batteries
@@ -382,7 +400,7 @@
       ${bar("Powerwall", e.battery_pct, `${battFlow}${DOT}reserve ${num(e.reserve_pct, 0)}%`)}
       ${bar("UPS", ups.chargePercent, `${esc(ups.power || "unknown")}${DOT}~${ups.runtimeMinutes ?? DASH} Min Runtime (Windows Estimate; UPS Panel Reads Lower)`)} <!-- t615u: Win32_Battery EstimatedRunTime is a Windows estimate, not the UPS reading -->
       ${bar("Athena", en ? v.battery_level : null, en ? `${num(v.battery_range, 0)} mi${DOT}${esc(athenaState(v))}` : DASH)}
-      ${bluettiBar(e.bluetti)}</div> <!-- 2026-11-03 bluetti-ui -->
+      ${bluettiBar(e.bluetti || bluettiReading)}</div> <!-- 2026-11-03 bluetti-ui -->
       ${kv("Windows UPS Policy", `warn ${win.lowLevelDC ?? DASH}%${DOT}${esc(win.criticalActionDC || DASH)} at ${win.criticalLevelDC ?? DASH}%`, win.criticalActionDC === "Shut down" ? "ok" : "warn")}
       ${kvLow("UPS Watcher", `${ups.watcher?.processes ?? 0} running${DOT}${ago(ups.watcher?.lastLogWrite)}`, ups.watcher?.status)}`;
 
@@ -403,15 +421,20 @@
 
     // home
     const g = he?.groups || {}, st = (x) => String(x.state ?? "").toLowerCase();
-    const lights = (g.home_controls || []).filter((x) => x.domain === "light"), lon = lights.filter((x) => st(x) === "on");
+    const controls = g.home_controls || [], lon = controls.filter((x) => st(x) === "on");
     const leaks = (g.safety || []).filter((x) => x.device_class === "moisture"), wet = leaks.filter((x) => st(x) === "on");
     const opens = g.openings || [];
     const cl = hs?.climate || {};
     const openNow = opens.filter((x) => /open|^on$/i.test(String(x.state)));
-    const home = !hs && !he ? `<p class="cw-empty">Home status and entities were not in this snapshot</p>` : `<div class="cw-bigrow two">${big("Indoor", num(cl.current_temperature, 1), `${DEG}F`, `${esc(cl.state || DASH)} / ${esc(cl.hvac_action || DASH)}${cl.target_temperature ? " \u2192 " + cl.target_temperature + DEG : ""}`)}${big("Lights On", lon.length, ` / ${lights.length}`, lon.length ? lon.map((x) => esc(x.name)).join(", ") : "All Off")}</div>
-      ${kv("Leak Sensors", wet.length ? `WET: ${wet.map((x) => esc(x.name)).join(", ")}` : `${leaks.length} Dry`, wet.length ? "bad" : "ok")}
-      ${kv("Doors & Openings", openNow.length ? `${openNow.length} open: ${openNow.map((x) => esc(x.name)).join(", ")}` : `${opens.length} Closed`, openNow.length ? "warn" : "ok")}
-      ${kv("Home Assistant", he ? `${he.summary?.available}/${he.summary?.entities} entities available` : "unreachable", he ? (he.summary?.unavailable ? "warn" : "ok") : "bad")}
+    const kept = (list, key) => (he?._protected_omitted || {})[key] ? "Withheld / Not included" : (Array.isArray(list) && list.length ? "" : "Unknown / No sensors");
+    const leakLine = kept(g.safety, "safety") || (wet.length ? `WET: ${wet.map((x) => esc(x.name)).join(", ")}` : `Dry · ${leaks.length} sensors`);
+    const openLine = kept(opens, "openings") || (openNow.length ? `${openNow.length} open: ${openNow.map((x) => esc(x.name)).join(", ")}` : `${opens.length} closed`);
+    const plain = (v) => /^(?:Withheld \/ Not included|Unknown \/ No sensors)$/.test(String(v)) ? esc(v) : TC(v);
+    const home = !hs && !he ? `<p class="cw-empty">Home status and entities were not in this snapshot</p>` : `<div class="cw-bigrow two">${big("Indoor", num(cl.current_temperature, 1), `${DEG}F`, `${esc(cl.state || DASH)} / ${esc(cl.hvac_action || DASH)}${cl.target_temperature ? " \u2192 " + cl.target_temperature + DEG : ""}`)}${big("Lights On", lon.length, ` / ${controls.length}`, lon.length ? lon.map((x) => esc(x.name)).join(", ") : "All Off")}</div>
+      <div class="cw-kv"><span>Leak Sensors</span><b>${plain(leakLine)}</b></div>
+      <div class="cw-kv"><span>Doors & Openings</span><b>${plain(openLine)}</b></div>
+      ${he?._protected_omitted?.security ? `<div class="cw-kv"><span>Security</span><b>${esc("Withheld / Not included")}</b></div>` : ""}
+      ${kv("Home Assistant", he?.summary ? `${he.summary.available}/${he.summary.entities} entities available` : DASH, he?.summary ? (he.summary.unavailable ? "warn" : "ok") : undefined)}
       ${kv("Indoor AQI", (hs?.environment?.air_quality || []).filter((x) => x.id === "indoor-aqi").map((x) => num(x.value, 0)).join("") || DASH)}
       <p class="cw-note" data-low="1">Ring status only${DOT}no camera feeds</p>`;
 
@@ -429,7 +452,7 @@
   }
   // CSP forbids inline style attributes, so sizes/colours are applied through the CSSOM.
   function applyStyles(scope) { scope.querySelectorAll("[data-w]").forEach((n) => { n.style.width = Math.max(0, Math.min(100, Number(n.dataset.w) || 0)) + "%"; }); scope.querySelectorAll("[data-c]").forEach((n) => n.style.setProperty("--c", n.dataset.c)); }
-  function bar(label, pct, sub) { const p = Number(pct); const ok = pct !== null && pct !== undefined && !isNaN(p); const c = !ok ? "" : p < 25 ? "bad" : p < 50 ? "warn" : "ok"; return `<div class="cw-bar"><div class="cw-barhead"><span>${label}</span><b>${ok ? Math.round(p) + "%" : DASH}</b></div><div class="cw-meter ${c}"><i data-w="${ok ? p : 0}"></i></div><small>${TC(sub)}</small></div>`; }
+  function bar(label, pct, sub) { const p = Number(pct); const ok = pct !== null && pct !== undefined && !isNaN(p); const c = !ok ? "" : p < 25 ? "bad" : p < 50 ? "warn" : "ok"; const shown = ok ? (Math.abs(p - Math.round(p)) < 0.05 ? String(Math.round(p)) : p.toFixed(1)) : DASH; return `<div class="cw-bar"><div class="cw-barhead"><span>${label}</span><b>${ok ? shown + "%" : DASH}</b></div><div class="cw-meter ${c}"><i data-w="${ok ? p : 0}"></i></div><small>${TC(sub)}</small></div>`; }
   // 2026-11-03 bluetti-ui: Bluetti portable battery row. Read-only, cloud data via Home Assistant. Words come from energy-ui.js (AtlasBluetti).
   function bluettiBar(b) { const words = window.AtlasBluetti ? window.AtlasBluetti.status(b) : (b ? (b.available === false ? "Offline (Cloud)" : "Reading Available") : "No Reading Yet"); return bar("Bluetti", b ? b.battery_pct : null, esc(words)).replace('class="cw-bar"', 'class="cw-bar cw-bar-bluetti"'); }
   const visible = () => { const p = $("panel-command"); return p && !p.hidden && !document.hidden; };

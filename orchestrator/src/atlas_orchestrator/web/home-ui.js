@@ -379,25 +379,45 @@
         if (l) node.style.left = l + "%";
         if (t) node.style.top = t + "%";
       });
+      const pinPos = { "pin-solar": "62,22", "pin-home": "46,48", "pin-grid": "68,72", "pin-battery": "66,26", "pin-athena": "24,68" };
+      panel.querySelectorAll(".energy-pin").forEach((node) => {
+        const pos = pinPos[[...node.classList].find((name) => pinPos[name])];
+        if (!pos) return;
+        const [l, t] = pos.split(",");
+        node.style.left = l + "%";
+        node.style.top = t + "%";
+        node.style.right = "auto";
+        node.style.bottom = "auto";
+      });
+    }
+    const sky = skyPosition(Date.now());
+    const photo = slot.querySelector(".energy-house-panel");
+    if (photo) {
+      photo.classList.toggle("is-night", Boolean(sky.night));
+      photo.style.setProperty("--night", sky.night ? "0.7" : "0");
     }
     const text = (id, value) => { const n = $(id); if (n) n.textContent = value; };
     const solarTxt = parts.solar == null ? DASH : kw(parts.solar);
     const houseTxt = parts.houseKw == null ? DASH : kw(parts.houseKw);
     const gridWord = !parts.ok || !num(parts.grid) || Math.abs(parts.grid) < 0.05 ? "Idle" : parts.grid > 0 ? "Importing" : "Exporting";
     const gridTxt = gridWord === "Idle" ? "0.00 kW" : kw(parts.grid);
-    const pct = parts.ok && num(L?.battery_pct) ? `${Math.round(L.battery_pct)}%` : DASH;
-    const pwTxt = !num(parts.pw) || Math.abs(parts.pw) < 0.05 ? pct : `${pct} · ${kw(parts.pw)}`;
+    const pct = parts.ok && num(L?.battery_pct) ? `${Number(L.battery_pct).toFixed(1)}%` : DASH;
+    const pwFlow = !num(parts.pw) || Math.abs(parts.pw) < 0.05 ? "" : ` · ${kw(parts.pw)}`;
+    const pwLabel = slot.querySelector(".pin-battery span");
+    if (pwLabel) pwLabel.textContent = parts.ok ? parts.pwState : "Powerwall";
     text("cw-pin-solar", parts.ok ? solarTxt : DASH);
     text("cw-pin-house", parts.ok ? houseTxt : DASH);
     text("cw-pin-grid", parts.ok ? `${gridWord} ${gridTxt}`.trim() : DASH);
-    text("cw-pin-pw", parts.ok ? `${parts.pwState} ${pwTxt}`.trim() : DASH);
+    text("cw-pin-pw", parts.ok ? `${pct}${pwFlow}` : DASH);
     const charge = parts.ok ? L?.vehicle_charge_snapshot : null;
     const hp = parts.ok ? L?.house_pins : null;
     const aOn = Boolean(hp?.athena_fresh) || charge?.charging_state === "Charging";
     const aKw = hp?.athena_fresh && num(hp.athena_kw) ? hp.athena_kw : (aOn && num(charge?.charger_power) ? charge.charger_power : null);
     const aPct = charge && num(charge.battery_level) ? `${Math.round(charge.battery_level)}%` : DASH;
-    const aPow = aOn && aKw != null && Number(aKw) > 0.1 ? `${Number(aKw).toFixed(2)} kW` : "0.00 kW";
-    text("cw-pin-athena", parts.ok ? `${aOn ? "House → Athena" : "Athena"} ${aPct} · ${aPow}` : DASH);
+    const aKey = String(charge?.charging_state || "").toLowerCase().replace(/[\s_]/g, "");
+    const aIdle = aKey === "disconnected" || aKey === "stopped" || aKey === "nopower" || aKey === "complete";
+    const aPow = aOn && aKw != null && Number(aKw) > 0.1 ? `${Number(aKw).toFixed(2)} kW` : "";
+    text("cw-pin-athena", parts.ok ? `${aPct}${aOn && aPow ? ` · ${aPow}` : aIdle ? " · Idle" : ""}` : DASH);
     const pulse = window.atlasHousePulseHome;
     if (typeof pulse === "function") pulse("cw-f-house", parts.houseKw);
     if (typeof window.AtlasCommandFit === "function") window.AtlasCommandFit();

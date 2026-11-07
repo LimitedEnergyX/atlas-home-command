@@ -5090,6 +5090,12 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
   margin: 0 auto .25em;
   flex: 1 1 auto;
 }
+#panel-command .cw-house-slot .energy-house-panel > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+}
 #panel-command #cw-power-tiles { flex: 0 0 auto; }
 #panel-command #cw-power-tiles .cw-big { padding: .18em .4em; }
 #panel-command #cw-power-tiles .cw-big strong { font-size: 1.35em; line-height: 1.05; }
@@ -5098,8 +5104,22 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
 #panel-command #cw-power-tiles .cw-tile b { font-size: .95em; line-height: 1.1; }
 #panel-command #cw-power-tiles .cw-kv { padding: .12em 0; font-size: .82em; }
 @media (min-width: 1601px) {
-  #panel-command .cw-layout { grid-template-columns: minmax(0, min(46vw, 980px)) repeat(3, minmax(0, 1fr)); }
+  #panel-command .cw-layout { grid-template-columns: minmax(0, min(54vw, 1180px)) repeat(3, minmax(0, 1fr)); }
 }
+#panel-command .cw-house-slot .energy-pin,
+#panel-command #cw-house-slot .energy-house-panel .energy-pin.pin-grid {
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: max-content;
+  transform: translate(-50%, -50%);
+  max-width: 36%;
+  white-space: normal;
+  z-index: 4;
+  background: rgba(0, 0, 0, .82);
+}
+#panel-command .cw-house-slot { overflow: visible; }
+#panel-command .cw-power { overflow: visible; }
 @media (max-width: 900px) {
   #panel-command .cw-house-slot .energy-house-panel,
   #panel-command .cw-house-slot .energy-house-panel.has-photo { max-height: none; }
