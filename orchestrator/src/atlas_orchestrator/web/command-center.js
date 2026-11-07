@@ -395,7 +395,18 @@
     const gridTxt = e.grid_up === false ? "GRID DOWN" : e.grid_kw > 0.05 ? "importing" : e.grid_kw < -0.05 ? "exporting" : "idle";
     const tiles = $("cw-power-tiles");
     const modeName = (m) => ({ self_consumption: "Self-Powered", autonomous: "Time-Based", backup: "Backup Only" })[String(m || "")] || String(m || DASH).replace(/_/g, " ");
-    if (tiles) tiles.innerHTML = en ? `<div class="cw-bigrow">${big("Solar", num(e.solar_kw, 2), "kW", `Today ${num(t.solar_kwh, 1)} kWh`, "solar")}${big("Home", num(e.home_kw, 2), "kW", `Today ${num(t.home_kwh, 1)} kWh`, "home")}${big("Grid", num(Math.abs(e.grid_kw), 2), "kW", gridTxt, e.grid_up === false ? "bad" : "grid")}${big("Powerwall", num(e.battery_pct, 1), "%", battFlow, "pw")}</div>
+    const houseOnly = (() => {
+      const pins = e.house_pins;
+      if (pins && pins.athena_fresh && Number.isFinite(Number(pins.home_kw))) return Number(pins.home_kw);
+      const raw = Number(e.home_kw);
+      if (!Number.isFinite(raw)) return null;
+      const charge = e.vehicle_charge_snapshot || {};
+      const charging = String(charge.charging_state || "").toLowerCase() === "charging";
+      const ev = Number(charge.charger_power);
+      if (charging && Number.isFinite(ev) && ev > 0.1 && raw + 0.05 >= ev) return Math.max(0, raw - ev);
+      return raw;
+    })();
+    if (tiles) tiles.innerHTML = en ? `<div class="cw-bigrow">${big("Solar", num(e.solar_kw, 2), "kW", `Today ${num(t.solar_kwh, 1)} kWh`, "solar")}${big("Home", num(houseOnly, 2), "kW", `Today ${num(t.home_kwh, 1)} kWh`, "home")}${big("Grid", num(Math.abs(e.grid_kw), 2), "kW", gridTxt, e.grid_up === false ? "bad" : "grid")}${big("Powerwall", num(e.battery_pct, 1), "%", battFlow, "pw")}</div>
       <div class="cw-grid3">${kv("Grid In / Out", `${num(t.import_kwh, 1)} / ${num(t.export_kwh, 1)} kWh`)}${kv("Solar Value", `$${num(t.solar_savings, 2)}`)}${kv("Bill Estimate", e.monthly ? `$${num(e.monthly.estimated_bill, 0)}${DOT}${e.monthly.days_remaining}d Left` : DASH)}${kv("Reserve / Mode", `${num(e.reserve_pct, 0)}%${DOT}${esc(modeName(e.mode))}`)}${kv("Grid", e.grid_up === false ? "DOWN" : "Up", e.grid_up === false ? "bad" : "ok")}${kv("Polled", ago(e.polled_at))}</div>` : `<p class="cw-empty">Energy API Unavailable</p>`;
 
     // batteries

@@ -5097,6 +5097,19 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
   object-position: center center;
 }
 #panel-command #cw-power-tiles { flex: 0 0 auto; }
+@media (min-width: 1100px) {
+  #panel-command .cw-house-slot { flex: 1 1 auto; min-height: 0; overflow: hidden; align-items: center; }
+  #panel-command .cw-house-slot .energy-house-panel,
+  #panel-command .cw-house-slot .energy-house-panel.has-photo {
+    flex: 0 1 auto;
+    min-height: 0;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    aspect-ratio: 1090 / 613;
+  }
+}
 #panel-command #cw-power-tiles .cw-big { padding: .18em .4em; }
 #panel-command #cw-power-tiles .cw-big strong { font-size: 1.35em; line-height: 1.05; }
 #panel-command #cw-power-tiles .cw-big span { min-height: 0; font-size: .75em; }
@@ -5132,9 +5145,10 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
 }
 #panel-command .cw-house-slot .energy-house-flows path.home-flow.is-on {
   opacity: 1;
-  stroke-dasharray: 14 12;
+  stroke-width: 6px;
+  stroke-dasharray: 16 10;
   animation: atlas-energy-flow-v2 1.1s linear infinite;
-  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 5px currentColor);
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #000) drop-shadow(0 0 5px currentColor);
 }
 #panel-command .cw-house-slot .energy-house-flows path.home-flow.is-on.is-rev { animation-direction: reverse; }
 #panel-command .cw-house-slot .home-c-solar.is-on { stroke: #ffd23f; }
@@ -5143,10 +5157,11 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
 #panel-command .cw-house-slot .home-c-athena.is-on { stroke: #c4b5fd; }
 #panel-command .cw-house-slot path.house-pulse.is-on,
 #panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on {
-  stroke-width: 5px;
+  stroke-width: 7px;
   vector-effect: non-scaling-stroke;
   opacity: 1;
-  stroke-dasharray: 10 40;
+  stroke-dasharray: 12 28;
+  filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #000);
 }
 #panel-command .cw-house-slot #cw-f-solar-pulse.is-on { stroke: #fff6d0; }
 #panel-command .cw-house-slot #cw-f-grid-pulse.is-on { stroke: #ffffff; }
@@ -5154,9 +5169,9 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
 #panel-command .cw-house-slot #cw-f-athena-pulse.is-on { stroke: #efe9ff; }
 #panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on.is-rev { animation-direction: reverse; }
 @media (max-width: 800px) {
-  #panel-command .cw-house-slot .energy-house-flows path.home-flow,
+  #panel-command .cw-house-slot .energy-house-flows path.home-flow.is-on,
   #panel-command .cw-house-slot path.house-pulse.is-on,
-  #panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on { stroke-width: 3px; }
+  #panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on { stroke-width: 4px; }
 }
 @media (max-width: 900px) {
   #panel-command .cw-house-slot .energy-house-panel,
@@ -5203,6 +5218,19 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
   #panel-command .cw-strip { order: 2; }
 }
 #panel-environment.tab-panel { max-width: none; width: 100%; }
+@media (min-width: 1100px) {
+  #panel-command .cw-power { min-height: 0; overflow: hidden; }
+  #panel-command .cw-house-slot { flex: 1 1 0; min-height: 0; overflow: hidden; }
+  #panel-command .cw-house-slot .energy-house-panel,
+  #panel-command .cw-house-slot .energy-house-panel.has-photo {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    aspect-ratio: auto;
+  }
+  #panel-command #cw-power-tiles { flex: 0 0 auto; }
+}
 @media (min-width: 1100px) {
   #panel-energy .atlas-frame.solp-grid {
     grid-template-columns: minmax(0, 1fr) minmax(22rem, 32rem);
