@@ -189,7 +189,9 @@
     $("energy-headline").innerHTML = definition.totals.map(([label, field]) => { const formatted = amount(totals[field], largeUnit); return `<div><span>${label}</span><strong>${formatted.value}<small>${formatted.unit}</small></strong></div>`; }).join("");
     if (["home", "solar"].includes(ui.view) && valid(totals.self_powered_pct)) $("energy-headline").insertAdjacentHTML("beforeend", `<div><span>Self-Powered</span><strong>${Math.round(totals.self_powered_pct)}<small>%</small></strong></div>`);
     const time = data.fetched_at ? new Date(data.fetched_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-    $("energy-history-status").textContent = ui.busy ? "Loading Tesla history…" : data.status === "reference" ? "Screenshot snapshot · Capture date unconfirmed" : data.status === "cached" ? `Saved Tesla data · Last fetched ${time}` : data.status === "healthy" ? `Tesla · ${time}${data.in_progress ? " · Period in progress" : ""}${data.has_gaps ? " · Data gaps" : ""}${data.buckets?.some(row => row.stale) ? " · Saved chart data" : ""}` : "Tesla history unavailable";
+    const exampleHistory = data.demo === true || data.example === true || data.recorded === true;
+    const historyLabel = ui.busy ? "Loading Tesla history…" : data.status === "reference" ? "Screenshot snapshot · Capture date unconfirmed" : data.status === "cached" ? `Saved Tesla data · Last fetched ${time}` : data.status === "healthy" ? `Tesla · ${time}${data.in_progress ? " · Period in progress" : ""}${data.has_gaps ? " · Data gaps" : ""}${data.buckets?.some(row => row.stale) ? " · Saved chart data" : ""}` : "Tesla history unavailable";
+    $("energy-history-status").textContent = exampleHistory && !ui.busy ? `${historyLabel} · Example recorded sample, not live` : historyLabel;
     if (ui.view === "vehicle" && !valid(totals.vehicle_kwh)) $("energy-history-status").textContent = "Vehicle History Not Available · Not A Zero Reading";
     // Powerwall's extra chart changes the desktop grid width. Apply the target
     // layout before measuring, otherwise the next view inherits the old scale.
@@ -464,12 +466,12 @@
   function buildPending() {
     const w = el("section", { class: "solp-pending-grid", "aria-label": "Pending Features" });
     w.innerHTML = `
-      <article class="solp-pending"><h3>Wall Connector <em>Pending — Install Nov 4</em></h3><ul><li>Power: —</li><li>Session kWh: —</li><li>Voltage: —</li><li>Plugged In: —</li><li>Faults: —</li></ul></article>
+      <article class="solp-pending"><h3>Wall Connector <em>Not installed</em></h3><ul><li>Power: —</li><li>Session kWh: —</li><li>Voltage: —</li><li>Plugged In: —</li><li>Faults: —</li></ul></article>
       <article class="solp-pending"><h3>Outage Runtime <em>Estimate · Powershare Pending</em></h3>
         <p class="solp-est">Powerwall Only: <b id="solp-rt-pw">—</b></p><p class="solp-est">Powerwall + Athena (80% → 10%): <b id="solp-rt-all">—</b></p>
         <p class="solp-note" id="solp-rt-basis">Estimate At Current House Load. Assumes ${PW_KWH} kWh Powerwall + ${ATHENA_BAND_KWH} kWh Athena Band (~61 kWh Total).</p></article>
       <article class="solp-pending"><h3>Backup Alerts <em>Pending</em></h3><ul><li>Athena Backing Up House</li><li>Near 10% Floor</li><li>Outage While Unplugged</li><li>Grid Restored</li></ul></article>
-      <article class="solp-pending wide"><h3>Charging Session History <em>Pending — Install Nov 4</em></h3><p class="solp-note">Wall Connector Sessions (Start, End, kWh, Peak kW) Will List Here.</p></article>`;
+      <article class="solp-pending wide"><h3>Charging Session History <em>Not installed</em></h3><p class="solp-note">No wall-connector session history is connected in this package.</p></article>`;
     return w;
   }
 
@@ -521,7 +523,11 @@
     try { state.live = await getJSON("/v1/energy/status"); state.ok = state.live.status === "healthy"; }
     catch (e) { state.ok = false; console.warn("Sol Pilot: status", e.message); }
     if (L_storm(state.live) != null) state.storm = L_storm(state.live);
-    try { const f = await getJSON("/v1/energy/forecast"); $("solp-offline").hidden = f.status === "healthy"; } catch { $("solp-offline").hidden = false; }
+    const offline = $("solp-offline");
+    if (offline) {
+      offline.hidden = state.ok;
+      offline.textContent = state.ok ? "" : "Energy readings are unavailable.";
+    }
     paint();
     try { window.dispatchEvent(new CustomEvent("atlas-sol-live", { detail: state.live || null })); } catch (e) { console.warn("Sol Hero hook", e); } // 2026-11-04 energy-page-upgrade
   }
@@ -545,7 +551,14 @@
     $("solp-disabled-note").textContent = !state.ok ? "Controls Disabled — Energy Service Unreachable." : "Controls Disabled — Powerwall Data Is Stale (Over 5 Minutes).";
     if (L.reserve_pct != null && !$("solp-reserve").dataset.touched) { $("solp-reserve").value = L.reserve_pct; $("solp-reserve-val").textContent = L.reserve_pct + "%"; $("solp-reserve").dataset.touched = "init"; }
     if (L.mode && MODES[L.mode] && !$("solp-mode").dataset.touched) { $("solp-mode").value = L.mode; $("solp-mode").dataset.touched = "init"; }
-    const load = +L.home_kw;
+    const pins = L.house_pins;
+    const rawLoad = Number(L.home_kw);
+    const chargeNow = L.vehicle_charge_snapshot || {};
+    const evNow = Number(chargeNow.charger_power);
+    const splitLoad = pins && pins.athena_fresh && Number.isFinite(Number(pins.home_kw))
+      ? Number(pins.home_kw)
+      : (String(chargeNow.charging_state || "").toLowerCase() === "charging" && Number.isFinite(rawLoad) && Number.isFinite(evNow) && evNow > 0.1 && rawLoad + 0.05 >= evNow ? Math.max(0, rawLoad - evNow) : rawLoad);
+    const load = splitLoad;
     if (load > 0.05 && L.battery_pct != null) {
       const pwKwh = PW_KWH * L.battery_pct / 100;
       $("solp-rt-pw").textContent = fmtH(pwKwh / load) + " (Est.)";

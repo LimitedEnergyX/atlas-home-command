@@ -805,7 +805,11 @@ function renderTravelPage() {
   document.getElementById("travel-ready-count").textContent = travel?.status === "healthy" ? `${summary.ready || 0} / ${summary.upcoming || 0}` : "—";
   document.getElementById("travel-charged-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "paid") : "—";
   document.getElementById("travel-later-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "later") : "—";
-  document.getElementById("travel-observed").textContent = travel?.status === "healthy" ? `Ledger Updated: ${travelTimestamp(travel.ledger_updated_at)}` : "Trip Ledger Unavailable";
+  const travelExample = document.getElementById("travel-example-banner");
+  if (travelExample) travelExample.hidden = !(travel?.demo === true || travel?.example === true);
+  document.getElementById("travel-observed").textContent = travel?.status === "healthy"
+    ? (travel.demo || travel.example ? "Example trips · Not a live itinerary" : `Ledger Updated: ${travelTimestamp(travel.ledger_updated_at)}`)
+    : "Trip Ledger Unavailable";
   renderTravelOperations();
 
   const host = document.getElementById("travel-trip-list");
@@ -1103,6 +1107,19 @@ function renderTravelLoyaltyPage() {
   }) : [travelEmpty("No loyalty programs have been recorded yet.")]));
 }
 
+function splitHouseKw(energy) {
+  if (!energy) return null;
+  const pins = energy.house_pins;
+  if (pins && pins.athena_fresh && Number.isFinite(Number(pins.home_kw))) return Number(pins.home_kw);
+  const raw = Number(energy.home_kw);
+  if (!Number.isFinite(raw)) return null;
+  const charge = energy.vehicle_charge_snapshot || {};
+  const charging = String(charge.charging_state || "").toLowerCase() === "charging";
+  const ev = Number(charge.charger_power);
+  if (charging && Number.isFinite(ev) && ev > 0.1 && raw + 0.05 >= ev) return Math.max(0, raw - ev);
+  return raw;
+}
+
 function energyCards() {
   const energy = state.energy;
   if (!energy || energy.status !== "healthy") {
@@ -1114,9 +1131,12 @@ function energyCards() {
     ];
   }
   const gridValue = Math.abs(Number(energy.grid_kw));
+  const houseKw = splitHouseKw(energy);
+  const rawHome = Number(energy.home_kw);
+  const split = Number.isFinite(rawHome) && houseKw != null && Math.abs(houseKw - rawHome) > 0.05;
   return [
     ["Solar Production", formatNumber(energy.solar_kw, " kW", 2), `${formatNumber(energy.today?.solar_kwh, " kWh")} Generated Today`],
-    ["House Load", formatNumber(energy.home_kw, " kW", 2), `${formatNumber(energy.today?.home_kwh, " kWh")} Used Today · Athena May Be Included`],
+    ["House Load", formatNumber(houseKw, " kW", 2), split ? "EV charging is shown separately" : "Current house load"],
     ["Battery", formatNumber(energy.battery_pct, "%"), `${energy.charging ? "Charging" : "Holding"} · ${formatNumber(energy.reserve_pct, "%")} Reserve`],
     ["Grid", formatNumber(gridValue, " kW", 2), `${titleCase(safeText(energy.grid_direction))} · Grid ${energy.grid_up ? "Online" : "Offline"}`],
   ];
@@ -1248,6 +1268,8 @@ function renderEnergyPage() {
     document.getElementById(`energy-page-${ids[index]}`).textContent = card[1];
   });
   document.getElementById("energy-page-solar-note").textContent = cards[0][2];
+  const houseNote = document.getElementById("energy-page-home-note");
+  if (houseNote) houseNote.textContent = cards[1][2];
   document.getElementById("energy-page-battery-note").textContent = cards[2][2];
   const energyReady = state.energy?.status === "healthy";
   const gridQuiet = energyReady && typeof state.energy.grid_kw === "number" && Number.isFinite(state.energy.grid_kw) && Math.abs(state.energy.grid_kw) < .05;
@@ -1563,7 +1585,8 @@ function weatherTime(value, weekday = false) {
 
 function renderOutdoorWeather() {
   const forecast = state.forecast || {};
-  const healthy = forecast.status === "healthy";
+  const example = forecast.example === true || forecast.demo === true;
+  const healthy = forecast.status === "healthy" || example;
   const current = healthy ? forecast.current || {} : {};
   const daily = healthy && Array.isArray(forecast.daily) ? forecast.daily : [];
   const hourlySource = healthy && Array.isArray(forecast.hourly) ? forecast.hourly : [];
@@ -1597,13 +1620,15 @@ function renderOutdoorWeather() {
   }
 
   const location = document.getElementById("weather-location");
-  if (location) location.textContent = healthy
-    ? `${safeText(forecast.location, "Texas")} · Updated ${humanTime(forecast.observed_at)}`
-    : "Outdoor Weather Unavailable";
+  if (location) location.textContent = !healthy
+    ? "Outdoor Weather Unavailable"
+    : example
+      ? "Example weather · Not a live observation"
+      : `${safeText(forecast.location, "Texas")} · Updated ${humanTime(forecast.observed_at)}`;
   document.getElementById("weather-now-icon").textContent = safeText(current.icon, "☼");
   document.getElementById("weather-now-temp").textContent = healthy ? formatNumber(current.temp_f, "°F", 0) : "—";
-  document.getElementById("weather-now-condition").textContent = healthy ? titleCase(safeText(current.desc, "Current Conditions")) : "Weather Unavailable";
-  document.getElementById("weather-now-feels").textContent = healthy ? `Feels Like ${formatNumber(current.feels_like_f, "°F", 0)}` : "Check The Weather Service";
+  document.getElementById("weather-now-condition").textContent = !healthy ? "Weather Unavailable" : example ? `Example · ${titleCase(safeText(current.desc, "Illustration"))}` : titleCase(safeText(current.desc, "Current Conditions"));
+  document.getElementById("weather-now-feels").textContent = !healthy ? "Check The Weather Service" : example ? `Example illustration · Feels like ${formatNumber(current.feels_like_f, "°F", 0)}` : `Feels Like ${formatNumber(current.feels_like_f, "°F", 0)}`;
 
   const facts = healthy ? [
     ["Today's High / Low", `${formatNumber(today.temp_max, "°", 0)} / ${formatNumber(today.temp_min, "°", 0)}`],
@@ -1626,7 +1651,7 @@ function renderOutdoorWeather() {
     return article;
   }) : [Object.assign(document.createElement("p"), { className: "empty-state", textContent: "Current Conditions Are Unavailable." })]));
 
-  const alerts = healthy && Array.isArray(state.energy?.weather_alerts) ? state.energy.weather_alerts : [];
+  const alerts = healthy && !example && Array.isArray(state.energy?.weather_alerts) ? state.energy.weather_alerts : [];
   const alertHost = document.getElementById("weather-alert-list");
   if (alertHost) {
     alertHost.hidden = !alerts.length;
@@ -1664,9 +1689,10 @@ function renderOutdoorWeather() {
   const hourlySummary = document.getElementById("weather-hourly-summary");
   if (hourlySummary) {
     const wettest = hourly.reduce((best, item) => Number(item.precip_prob || 0) > Number(best?.precip_prob || 0) ? item : best, null);
-    hourlySummary.textContent = wettest && Number(wettest.precip_prob || 0) > 0
+    const summary = wettest && Number(wettest.precip_prob || 0) > 0
       ? `Peak Rain Chance ${formatNumber(wettest.precip_prob, "%", 0)} At ${weatherTime(wettest.time)}`
       : hourly.length ? "No Rain Expected" : "Forecast Unavailable";
+    hourlySummary.textContent = example && hourly.length ? `Example · ${summary}` : summary;
   }
 
   const dailyHost = document.getElementById("weather-daily-list");
