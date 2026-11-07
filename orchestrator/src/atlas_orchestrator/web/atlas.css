@@ -5120,6 +5120,44 @@ path.house-pulse.is-on { stroke:#d6e2ff; stroke-width:.9; stroke-linecap:round; 
 }
 #panel-command .cw-house-slot { overflow: visible; }
 #panel-command .cw-power { overflow: visible; }
+/* Command photo flows. House load stays right-to-left. Battery charge does not reverse it. */
+#panel-command .cw-house-slot .energy-house-flows { z-index: 3; }
+#panel-command .cw-house-slot .energy-house-flows path.home-flow {
+  fill: none;
+  stroke: rgba(255, 255, 255, .34);
+  stroke-width: 4px;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  opacity: .4;
+}
+#panel-command .cw-house-slot .energy-house-flows path.home-flow.is-on {
+  opacity: 1;
+  stroke-dasharray: 14 12;
+  animation: atlas-energy-flow-v2 1.1s linear infinite;
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 5px currentColor);
+}
+#panel-command .cw-house-slot .energy-house-flows path.home-flow.is-on.is-rev { animation-direction: reverse; }
+#panel-command .cw-house-slot .home-c-solar.is-on { stroke: #ffd23f; }
+#panel-command .cw-house-slot .home-c-grid.is-on { stroke: #d5dbe6; }
+#panel-command .cw-house-slot .home-c-pw.is-on { stroke: #5b8cff; }
+#panel-command .cw-house-slot .home-c-athena.is-on { stroke: #c4b5fd; }
+#panel-command .cw-house-slot path.house-pulse.is-on,
+#panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on {
+  stroke-width: 5px;
+  vector-effect: non-scaling-stroke;
+  opacity: 1;
+  stroke-dasharray: 10 40;
+}
+#panel-command .cw-house-slot #cw-f-solar-pulse.is-on { stroke: #fff6d0; }
+#panel-command .cw-house-slot #cw-f-grid-pulse.is-on { stroke: #ffffff; }
+#panel-command .cw-house-slot #cw-f-house-pulse.is-on { stroke: #d6e2ff; }
+#panel-command .cw-house-slot #cw-f-athena-pulse.is-on { stroke: #efe9ff; }
+#panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on.is-rev { animation-direction: reverse; }
+@media (max-width: 800px) {
+  #panel-command .cw-house-slot .energy-house-flows path.home-flow,
+  #panel-command .cw-house-slot path.house-pulse.is-on,
+  #panel-command .cw-house-slot .energy-house-flows path.flow-pulse.is-on { stroke-width: 3px; }
+}
 @media (max-width: 900px) {
   #panel-command .cw-house-slot .energy-house-panel,
   #panel-command .cw-house-slot .energy-house-panel.has-photo { max-height: none; }

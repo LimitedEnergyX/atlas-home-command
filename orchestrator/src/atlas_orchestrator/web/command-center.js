@@ -374,7 +374,11 @@
     const stamp = (payload) => payload?._fixture?.captured_at_ct || "";
     const readingAt = [stamp(hs), stamp(he), stamp(en), stamp(as)].find(Boolean) || "";
     const systemAt = stamp(c);
-    if (readingAt || systemAt) {
+    const energyIllustrative = Boolean(en?._fixture?.illustrative);
+    const householdStamps = [stamp(hs), stamp(he), stamp(c)].filter(Boolean);
+    if (energyIllustrative && householdStamps.some((t) => !String(t).includes("T15:30"))) {
+      $("cw-updated").textContent = "Illustrative 3:30 PM energy; household readings from captured snapshots · not live";
+    } else if (readingAt || systemAt) {
       const bits = [];
       if (readingAt) bits.push(`Readings snapshot ${readingAt}`);
       if (systemAt && systemAt !== readingAt) bits.push(`UPS/system snapshot ${systemAt}`);

@@ -418,6 +418,37 @@
     const aIdle = aKey === "disconnected" || aKey === "stopped" || aKey === "nopower" || aKey === "complete";
     const aPow = aOn && aKw != null && Number(aKw) > 0.1 ? `${Number(aKw).toFixed(2)} kW` : "";
     text("cw-pin-athena", parts.ok ? `${aPct}${aOn && aPow ? ` · ${aPow}` : aIdle ? " · Idle" : ""}` : DASH);
+    const mark = (id, active, reverse) => {
+      const path = $(id);
+      if (!path) return;
+      const base = String(path.getAttribute("class") || "").replace(/\s*\b(is-on|is-rev)\b/g, "");
+      path.setAttribute("class", active ? `${base} is-on${reverse ? " is-rev" : ""}` : base);
+      if (id === "cw-f-house") return;
+      let pulse = $(id + "-pulse");
+      if (!pulse) {
+        pulse = path.cloneNode(false);
+        pulse.id = id + "-pulse";
+        pulse.removeAttribute("class");
+        pulse.setAttribute("pathLength", "100");
+        pulse.classList.add("flow-pulse");
+        path.after(pulse);
+      }
+      pulse.classList.toggle("is-on", Boolean(active));
+      pulse.classList.toggle("is-rev", Boolean(active && reverse));
+      if (active) pulse.style.setProperty("--pulse-dur", "2.4s");
+    };
+    const solarOn = parts.ok && num(parts.solar) && parts.solar > 0.05;
+    const gridKw = parts.ok && num(parts.grid) ? parts.grid : 0;
+    const evOn = Boolean(aOn && aKw != null && Number(aKw) > 0.1);
+    mark("cw-f-solar", solarOn, false);
+    mark("cw-f-grid", Math.abs(gridKw) >= 0.05, gridKw < -0.05);
+    mark("cw-f-athena", evOn, false);
+    const housePath = $("cw-f-house");
+    if (housePath) {
+      const base = String(housePath.getAttribute("class") || "").replace(/\s*\b(is-on|is-rev)\b/g, "");
+      const houseOn = num(parts.houseKw) && parts.houseKw > 0.05;
+      housePath.setAttribute("class", houseOn ? `${base} is-on` : base);
+    }
     const pulse = window.atlasHousePulseHome;
     if (typeof pulse === "function") pulse("cw-f-house", parts.houseKw);
     if (typeof window.AtlasCommandFit === "function") window.AtlasCommandFit();
