@@ -805,7 +805,11 @@ function renderTravelPage() {
   document.getElementById("travel-ready-count").textContent = travel?.status === "healthy" ? `${summary.ready || 0} / ${summary.upcoming || 0}` : "—";
   document.getElementById("travel-charged-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "paid") : "—";
   document.getElementById("travel-later-total").textContent = travel?.status === "healthy" ? travelCosts(travel.trips || [], "later") : "—";
-  document.getElementById("travel-observed").textContent = travel?.status === "healthy" ? `Ledger Updated: ${travelTimestamp(travel.ledger_updated_at)}` : "Trip Ledger Unavailable";
+  const travelExample = document.getElementById("travel-example-banner");
+  if (travelExample) travelExample.hidden = !(travel?.demo === true || travel?.example === true);
+  document.getElementById("travel-observed").textContent = travel?.status === "healthy"
+    ? (travel.demo || travel.example ? "Example trips · Not a live itinerary" : `Ledger Updated: ${travelTimestamp(travel.ledger_updated_at)}`)
+    : "Trip Ledger Unavailable";
   renderTravelOperations();
 
   const host = document.getElementById("travel-trip-list");
@@ -1103,6 +1107,19 @@ function renderTravelLoyaltyPage() {
   }) : [travelEmpty("No loyalty programs have been recorded yet.")]));
 }
 
+function splitHouseKw(energy) {
+  if (!energy) return null;
+  const pins = energy.house_pins;
+  if (pins && pins.athena_fresh && Number.isFinite(Number(pins.home_kw))) return Number(pins.home_kw);
+  const raw = Number(energy.home_kw);
+  if (!Number.isFinite(raw)) return null;
+  const charge = energy.vehicle_charge_snapshot || {};
+  const charging = String(charge.charging_state || "").toLowerCase() === "charging";
+  const ev = Number(charge.charger_power);
+  if (charging && Number.isFinite(ev) && ev > 0.1 && raw + 0.05 >= ev) return Math.max(0, raw - ev);
+  return raw;
+}
+
 function energyCards() {
   const energy = state.energy;
   if (!energy || energy.status !== "healthy") {
@@ -1114,9 +1131,12 @@ function energyCards() {
     ];
   }
   const gridValue = Math.abs(Number(energy.grid_kw));
+  const houseKw = splitHouseKw(energy);
+  const rawHome = Number(energy.home_kw);
+  const split = Number.isFinite(rawHome) && houseKw != null && Math.abs(houseKw - rawHome) > 0.05;
   return [
     ["Solar Production", formatNumber(energy.solar_kw, " kW", 2), `${formatNumber(energy.today?.solar_kwh, " kWh")} Generated Today`],
-    ["House Load", formatNumber(energy.home_kw, " kW", 2), `${formatNumber(energy.today?.home_kwh, " kWh")} Used Today · Athena May Be Included`],
+    ["House Load", formatNumber(houseKw, " kW", 2), split ? "EV charging is shown separately" : "Current house load"],
     ["Battery", formatNumber(energy.battery_pct, "%"), `${energy.charging ? "Charging" : "Holding"} · ${formatNumber(energy.reserve_pct, "%")} Reserve`],
     ["Grid", formatNumber(gridValue, " kW", 2), `${titleCase(safeText(energy.grid_direction))} · Grid ${energy.grid_up ? "Online" : "Offline"}`],
   ];
@@ -1248,6 +1268,8 @@ function renderEnergyPage() {
     document.getElementById(`energy-page-${ids[index]}`).textContent = card[1];
   });
   document.getElementById("energy-page-solar-note").textContent = cards[0][2];
+  const houseNote = document.getElementById("energy-page-home-note");
+  if (houseNote) houseNote.textContent = cards[1][2];
   document.getElementById("energy-page-battery-note").textContent = cards[2][2];
   const energyReady = state.energy?.status === "healthy";
   const gridQuiet = energyReady && typeof state.energy.grid_kw === "number" && Number.isFinite(state.energy.grid_kw) && Math.abs(state.energy.grid_kw) < .05;
@@ -1563,7 +1585,8 @@ function weatherTime(value, weekday = false) {
 
 function renderOutdoorWeather() {
   const forecast = state.forecast || {};
-  const healthy = forecast.status === "healthy";
+  const example = forecast.example === true || forecast.demo === true;
+  const healthy = forecast.status === "healthy" || example;
   const current = healthy ? forecast.current || {} : {};
   const daily = healthy && Array.isArray(forecast.daily) ? forecast.daily : [];
   const hourlySource = healthy && Array.isArray(forecast.hourly) ? forecast.hourly : [];
@@ -1576,6 +1599,18 @@ function renderOutdoorWeather() {
   const currentHour = hourly[0] || hourlySource[0] || {};
 
   const radarImage = document.getElementById("weather-radar-image");
+  if (radarImage && !radarImage.dataset.radarSrc && !radarImage.getAttribute("src")) {
+    radarImage.dataset.radarSrc = "https://radar.weather.gov/ridge/standard/SOUTHPLAINS_loop.gif";
+  }
+  if (radarImage && !radarImage.dataset.radarBound) {
+    radarImage.dataset.radarBound = "1";
+    radarImage.addEventListener("error", () => {
+      const note = document.createElement("p");
+      note.className = "empty-state";
+      note.textContent = "Statewide Texas radar did not load from the National Weather Service. This is not a live radar image.";
+      radarImage.replaceWith(note);
+    });
+  }
   if (radarImage?.dataset.radarSrc) {
     const radarBucket = String(Math.floor(Date.now() / (5 * 60 * 1000)));
     if (radarImage.dataset.radarBucket !== radarBucket) {
@@ -1585,13 +1620,15 @@ function renderOutdoorWeather() {
   }
 
   const location = document.getElementById("weather-location");
-  if (location) location.textContent = healthy
-    ? `${safeText(forecast.location, "Copperas Cove, TX")} · Updated ${humanTime(forecast.observed_at)}`
-    : "Outdoor Weather Unavailable";
+  if (location) location.textContent = !healthy
+    ? "Outdoor Weather Unavailable"
+    : example
+      ? "Example weather · Not a live observation"
+      : `${safeText(forecast.location, "Texas")} · Updated ${humanTime(forecast.observed_at)}`;
   document.getElementById("weather-now-icon").textContent = safeText(current.icon, "☼");
   document.getElementById("weather-now-temp").textContent = healthy ? formatNumber(current.temp_f, "°F", 0) : "—";
-  document.getElementById("weather-now-condition").textContent = healthy ? titleCase(safeText(current.desc, "Current Conditions")) : "Weather Unavailable";
-  document.getElementById("weather-now-feels").textContent = healthy ? `Feels Like ${formatNumber(current.feels_like_f, "°F", 0)}` : "Check The Weather Service";
+  document.getElementById("weather-now-condition").textContent = !healthy ? "Weather Unavailable" : example ? `Example · ${titleCase(safeText(current.desc, "Illustration"))}` : titleCase(safeText(current.desc, "Current Conditions"));
+  document.getElementById("weather-now-feels").textContent = !healthy ? "Check The Weather Service" : example ? `Example illustration · Feels like ${formatNumber(current.feels_like_f, "°F", 0)}` : `Feels Like ${formatNumber(current.feels_like_f, "°F", 0)}`;
 
   const facts = healthy ? [
     ["Today's High / Low", `${formatNumber(today.temp_max, "°", 0)} / ${formatNumber(today.temp_min, "°", 0)}`],
@@ -1614,7 +1651,7 @@ function renderOutdoorWeather() {
     return article;
   }) : [Object.assign(document.createElement("p"), { className: "empty-state", textContent: "Current Conditions Are Unavailable." })]));
 
-  const alerts = healthy && Array.isArray(state.energy?.weather_alerts) ? state.energy.weather_alerts : [];
+  const alerts = healthy && !example && Array.isArray(state.energy?.weather_alerts) ? state.energy.weather_alerts : [];
   const alertHost = document.getElementById("weather-alert-list");
   if (alertHost) {
     alertHost.hidden = !alerts.length;
@@ -1652,9 +1689,10 @@ function renderOutdoorWeather() {
   const hourlySummary = document.getElementById("weather-hourly-summary");
   if (hourlySummary) {
     const wettest = hourly.reduce((best, item) => Number(item.precip_prob || 0) > Number(best?.precip_prob || 0) ? item : best, null);
-    hourlySummary.textContent = wettest && Number(wettest.precip_prob || 0) > 0
+    const summary = wettest && Number(wettest.precip_prob || 0) > 0
       ? `Peak Rain Chance ${formatNumber(wettest.precip_prob, "%", 0)} At ${weatherTime(wettest.time)}`
       : hourly.length ? "No Rain Expected" : "Forecast Unavailable";
+    hourlySummary.textContent = example && hourly.length ? `Example · ${summary}` : summary;
   }
 
   const dailyHost = document.getElementById("weather-daily-list");
@@ -1844,7 +1882,8 @@ function renderHvacControl() {
     hvacUi.tone = "is-success";
     hvacUi.pendingTarget = null;
   }
-  const operation = hvac.available ? safeText(hvac.climate.hvac_action, hvac.climate.state).replaceAll("_", " ") : "Thermostat unavailable";
+  const omitted = state.home?.status === "not-included" || state.home?._capture === "illustrative-omitted";
+  const operation = omitted ? "Not included in this illustrative capture" : hvac.available ? safeText(hvac.climate.hvac_action, hvac.climate.state).replaceAll("_", " ") : "Thermostat unavailable";
   const message = hvacUi.saving ? "Sending temperature request…"
     : hvacUi.needsRefresh ? hvacUi.message
     : !hvac.editable ? (hvac.available && !hvac.fahrenheit ? "Temperature controls require Fahrenheit." : "Waiting for thermostat data. Controls are unavailable.")
@@ -1935,6 +1974,88 @@ async function applyTemperature() {
   }
 }
 
+function railPhrase(payload) {
+  if (!payload) return "Unavailable";
+  if (payload.status === "not-included" || payload._capture === "illustrative-omitted") return "Not included in this illustrative capture";
+  if (payload.status === "unavailable" || payload.status === "error") return "Unavailable";
+  return "";
+}
+function setHomeRail(id, text) {
+  const list = document.getElementById(id);
+  if (!list) return;
+  list.replaceChildren();
+  const item = document.createElement("li");
+  item.className = "home-rail-empty";
+  item.textContent = text;
+  list.append(item);
+}
+function renderHomeRailsFrom(calendar, maintenance) {
+  const travelPhrase = railPhrase(state.travel);
+  if (travelPhrase) setHomeRail("home-rail-trips", travelPhrase);
+  else {
+    const trips = Array.isArray(state.travel?.trips) ? state.travel.trips.slice(0, 3) : [];
+    if (!trips.length) setHomeRail("home-rail-trips", "No entries in this reading");
+    else {
+      const list = document.getElementById("home-rail-trips");
+      if (list) {
+        list.replaceChildren(...trips.map((trip) => {
+          const item = document.createElement("li");
+          item.textContent = safeText(trip.title || trip.name, "Trip");
+          return item;
+        }));
+      }
+    }
+  }
+  const taskPhrase = railPhrase(calendar);
+  if (taskPhrase) setHomeRail("home-rail-tasks", taskPhrase);
+  else {
+    const events = Array.isArray(calendar?.events) ? calendar.events.filter((event) => event.status !== "canceled").slice(0, 3) : [];
+    if (!events.length) setHomeRail("home-rail-tasks", "No entries in this reading");
+    else {
+      const list = document.getElementById("home-rail-tasks");
+      if (list) {
+        list.replaceChildren(...events.map((event) => {
+          const item = document.createElement("li");
+          item.textContent = safeText(event.title, "Task");
+          return item;
+        }));
+      }
+    }
+  }
+  const servicePhrase = railPhrase(maintenance);
+  if (servicePhrase) setHomeRail("home-rail-service", servicePhrase);
+  else {
+    const records = Array.isArray(maintenance?.records) ? maintenance.records.filter((item) => !item.completed_at).slice(0, 3) : [];
+    if (!records.length) setHomeRail("home-rail-service", "No entries in this reading");
+    else {
+      const list = document.getElementById("home-rail-service");
+      if (list) {
+        list.replaceChildren(...records.map((item) => {
+          const row = document.createElement("li");
+          row.textContent = safeText(item.task || item.equipment, "Service");
+          return row;
+        }));
+      }
+    }
+  }
+}
+async function renderHomeRails() {
+  let calendar = { status: "unavailable" };
+  let maintenance = { status: "unavailable" };
+  try {
+    const [calendarResponse, maintenanceResponse] = await Promise.all([
+      fetchSnapshot("/v1/calendar"),
+      fetchSnapshot("/v1/maintenance"),
+    ]);
+    calendar = calendarResponse?.ok ? await calendarResponse.json() : { status: "unavailable" };
+    maintenance = maintenanceResponse?.ok ? await maintenanceResponse.json() : { status: "unavailable" };
+  } catch (_error) {
+    calendar = { status: "unavailable" };
+    maintenance = { status: "unavailable" };
+  }
+  renderHomeRailsFrom(calendar, maintenance);
+}
+
 function renderError() {
   const lastObserved = state.status?.observed_at;
   state.status = null;
@@ -1943,6 +2064,8 @@ function renderError() {
   document.getElementById("last-updated").textContent = lastObserved ? `Last Seen ${humanTime(lastObserved)}` : "Waiting For Local API";
   for (const id of ["metric-hvac", "metric-environment", "metric-pantry", "metric-energy"]) document.getElementById(id).textContent = "—";
   renderSecurityPage();
+  renderHvacControl();
+  renderHomeRails();
 }
 
 async function fetchSnapshot(url) {
@@ -1975,6 +2098,9 @@ async function refresh() {
     if (!statusResponse?.ok) throw new Error("Status Unavailable");
     state.cyber = cyberResponse?.ok ? await cyberResponse.json() : {status:"unavailable",fresh:false};
     state.energy = energyResponse?.ok ? await energyResponse.json() : { status: "unavailable" };
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function" && typeof CustomEvent === "function") {
+      window.dispatchEvent(new CustomEvent("atlas-sol-live", { detail: state.energy }));
+    }
     state.forecast = forecastResponse?.ok ? await forecastResponse.json() : { status: "unavailable" };
     const homeSnapshot = homeResponse?.ok ? await homeResponse.json() : { status: "unavailable" };
     // A refresh started before a control request must not replace its newer readback.
@@ -2003,6 +2129,7 @@ async function refresh() {
     renderError();
   } finally {
     renderHvacControl();
+    renderHomeRails();
     button.disabled = false;
     button.textContent = "Refresh Status";
   }

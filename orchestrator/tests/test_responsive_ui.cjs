@@ -4,10 +4,16 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../src/atlas_orchestrator/web/atlas.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../src/atlas_orchestrator/web/index.html'),'utf8');
 const home=html.slice(html.indexOf('id="panel-home"'),html.indexOf('<section class="control-overlay"'));
-assert(home.indexOf('class="home-module-grid"') < home.indexOf('id="home-hvac"'));
+assert(home.includes('class="home-mods"'));
+assert(home.includes('Energy At A Glance'));
+assert(home.includes('data-pos="43.7,56.9"'));
+assert(home.includes('data-pos="58,38"'));
+assert(home.includes('data-pos="85.3,43"'));
+assert(home.includes('data-pos="88,33"'));
+assert(home.includes('data-pos="90,86"'));
 assert(!home.includes('home-preview'));
 assert.equal((home.match(/id="home-hvac"/g)||[]).length,1);
-assert(!home.slice(home.indexOf('data-hvac-status')).includes('<section'),'HVAC must be the last Home section');
+assert(home.includes('id="quick-light-controls"'));
 for(const initialWidth of [320,1280]){
   const queries=new Map();
   const rail={setAttribute(name,value){this[name]=value;}};

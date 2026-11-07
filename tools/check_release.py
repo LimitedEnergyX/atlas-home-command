@@ -14,7 +14,7 @@ APPROVED_RASTERS = {"orchestrator/src/atlas_orchestrator/web/heroes/atlas-home-d
 # existing house illustration; the vehicle and simulated radar images are generated.
 APPROVED_RASTERS |= {
     f"orchestrator/src/atlas_orchestrator/web/{name}.png"
-    for name in ("atlas-house-hilltop", "model-y", "pickup", "motorcycle", "dallas-radar-demo")
+    for name in ("atlas-house-hilltop", "atlas-house-photo", "model-y", "pickup", "motorcycle", "dallas-radar-demo")
 }
 PATTERNS = {
     "private key": r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",

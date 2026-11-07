@@ -10,7 +10,7 @@ from atlas_orchestrator.charging_records import read_charging_records
 class ReviewedRecordTests(unittest.TestCase):
     def test_public_visual_assets_are_explicitly_served(self):
         from atlas_orchestrator.api import STATIC_ROUTES
-        for name in ('atlas-house-hilltop.png', 'model-y.png', 'pickup.png', 'motorcycle.png'):
+        for name in ('atlas-house-hilltop.png', 'atlas-house-photo.png', 'model-y.png', 'pickup.png', 'motorcycle.png'):
             with self.subTest(asset=name):
                 self.assertTrue(STATIC_ROUTES['/assets/' + name].is_file())
 

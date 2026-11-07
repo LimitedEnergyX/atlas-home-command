@@ -64,14 +64,14 @@ vm.runInNewContext(fs.readFileSync('demo/demo.js','utf8'),context);
  const history=await(await window.fetch('/v1/home/environment/history')).json();assert(history.series.length>=5);assert(history.series.every(row=>row.points.length===97));
  const energy=await(await window.fetch('/v1/energy/status')).json();assert.equal(energy.recorded_date,'2026-09-06');assert(Object.values(energy.monthly).every(value=>value!==null));
  const html=fs.readFileSync('dist/index.html','utf8');assert(html.includes("connect-src 'none'"));assert(!html.includes('src="/assets/'));
- assert(html.includes('assets/atlas-house-hilltop.png'));assert(html.includes('Simulated Dallas Radar'));
+ assert(html.includes('assets/atlas-house-photo.png'));assert(html.includes('Simulated Dallas Radar'));
  assert(html.includes('Not Live Weather'));assert(!html.includes('<h3>Live Radar</h3>'));
  for(const name of ['travel','pantry','maintenance','systems']){
   assert(html.includes('assets/heroes/'+name+'.png'),name+' page artwork');
   assert(fs.existsSync('dist/assets/heroes/'+name+'.png'),name+' bundled artwork');
  }
  assert.equal((html.match(/class="module-art"/g)||[]).length,4);
- assert(html.includes('assets/heroes/atlas-home-desktop.png'),'Home artwork preserved');
+ assert(html.includes('id="home-hero"') && html.includes('assets/atlas-house-photo.png'),'Home uses the reviewed house photo');
  assert(!html.includes('Copperas Cove'),'No private default weather location');
  for(const asset of ['model-y.png','pickup.png','motorcycle.png','dallas-radar-demo.png'])assert(fs.existsSync('dist/assets/'+asset),asset);
  const vehicleScript=fs.readFileSync('dist/argo/assets/js/vehicle.js','utf8');

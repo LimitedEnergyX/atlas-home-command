@@ -16,15 +16,20 @@ class IdentityTests(unittest.TestCase):
         for module, identity in IDENTITIES.items():
             with self.subTest(module=module):
                 if module == "agents":
-                    # Agents remains in the rail, not in the nine-card Home grid.
+                    # Agents remains in the rail, not in the Home module list.
                     self.assertIn('data-tab="agents"', html)
                     continue
+                if module == "home":
+                    self.assertIn('id="panel-home"', html)
+                    self.assertIn('id="tab-home"', html)
+                    self.assertIn("/assets/atlas-house-photo.png", html)
+                    continue
                 candidates = re.findall(r'<button[^>]*data-tab-target="' + module + r'"[^>]*>.*?</button>', html)
-                tile = next(candidate for candidate in candidates if 'class="greek-association"' in candidate)
+                tile = next(candidate for candidate in candidates if 'class="home-mod"' in candidate)
                 extension = "svg" if identity in {"argo", "daedalus"} else "png"
                 route = f"/assets/greek/{identity}.{extension}"
                 self.assertIn(f'src="{route}"', tile)
-                self.assertIn(f"<b>{identity.title()}</b>", tile)
+                self.assertIn(f"<em>{identity.title()}</em>", tile)
                 self.assertEqual(STATIC_ROUTES[route], WEB_ROOT / "greek" / f"{identity}.{extension}")
                 signature = STATIC_ROUTES[route].read_bytes()
                 self.assertTrue(signature.startswith(b"<svg") if extension == "svg" else signature.startswith(b"\x89PNG\r\n\x1a\n"))

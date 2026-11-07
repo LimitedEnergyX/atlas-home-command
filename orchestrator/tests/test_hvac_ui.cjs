@@ -3,14 +3,14 @@ const fs = require('node:fs'), path = require('node:path'), vm = require('node:v
 const source = fs.readFileSync(path.join(__dirname, '../src/atlas_orchestrator/web/atlas.js'), 'utf8');
 const html = fs.readFileSync(path.join(__dirname, '../src/atlas_orchestrator/web/index.html'), 'utf8');
 const css = fs.readFileSync(path.join(__dirname, '../src/atlas_orchestrator/web/atlas.css'), 'utf8');
-const element = (dataset = {}) => ({dataset, textContent:'', disabled:false, events:{}, classList:{add(){},remove(){}}, addEventListener(type, handler){this.events[type]=handler;},focus(){this.focused=true;}});
+const element = (dataset = {}) => ({dataset, textContent:'', disabled:false, children:[], events:{}, classList:{add(){},remove(){}}, addEventListener(type, handler){this.events[type]=handler;}, focus(){this.focused=true;}, replaceChildren(...items){this.children=items; if (!items.length) this.textContent='';}, append(...items){this.children.push(...items);}});
 const surfaces = ['home', 'environment', 'dialog'].map(name => ({name, current:element(), target:element(), operation:element(), status:element(), down:element({hvacAdjust:'-1'}), up:element({hvacAdjust:'1'}), apply:element()}));
 const selectors = {'[data-hvac-current]':'current', '[data-hvac-target]':'target', '[data-hvac-operation]':'operation', '[data-hvac-status]':'status', '[data-hvac-apply]':'apply'};
 const ids = new Map();
 const byId = id => {if (!ids.has(id)) ids.set(id, element());return ids.get(id);};
 const state = {home:null, hvacDraft:null};
 let calls = [];
-const context = {state, AbortSignal, Number, Math, Boolean, document:{querySelectorAll:selector => selector === '[data-hvac-adjust]' ? surfaces.flatMap(surface=>[surface.down,surface.up]) : surfaces.map(surface=>surface[selectors[selector]]), getElementById:byId, activeElement:byId('origin'), contains:()=>true, body:{classList:{add(){},remove(){}}}},
+const context = {state, AbortSignal, Number, Math, Boolean, document:{querySelectorAll:selector => selector === '[data-hvac-adjust]' ? surfaces.flatMap(surface=>[surface.down,surface.up]) : surfaces.map(surface=>surface[selectors[selector]]), getElementById:byId, createElement:()=>element(), activeElement:byId('origin'), contains:()=>true, body:{classList:{add(){},remove(){}}}},
   renderEnvironmentSnapshot(){}, render(){}, safeText:(value,fallback)=>value || fallback,
   fetch:async (url, options)=>{calls.push({url,options});throw new Error('Unexpected request');}};
 vm.createContext(context);
