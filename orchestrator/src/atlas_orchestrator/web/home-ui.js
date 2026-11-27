@@ -238,7 +238,8 @@
       let aPow = "0.00 kW";
       if (aOn && aKw != null && Number(aKw) > 0.1) aPow = Number(aKw).toFixed(2) + " kW";
       else if (String(ch?.charging_state || "").toLowerCase() === "disconnected") aPow = "Idle";
-      pinAth.innerHTML = `<small>${aOn ? "House \u2192 Athena" : "Athena"}</small>${aPct} \u00b7 ${aPow}`;
+      const evLegend = window.matchMedia("(max-width: 768px)").matches ? "Athena · vehicle charging" : "House \u2192 Athena";
+      pinAth.innerHTML = `<small>${aOn ? evLegend : "Athena"}</small>${aPct} \u00b7 ${aPow}`;
       pinAth.classList.toggle("is-idle", !aOn);
     }
 

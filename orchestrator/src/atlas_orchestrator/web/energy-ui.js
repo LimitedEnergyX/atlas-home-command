@@ -456,7 +456,7 @@
         <button type="button" data-act="storm" id="solp-storm-btn">Toggle Storm Watch…</button></div>
       <div class="solp-ctl"><button type="button" class="warn" data-act="max">Prepare For Outage (Max Backup)…</button></div>
       <div class="solp-ctl"><button type="button" data-act="restore">Restore Previous Settings…</button></div>
-      <p class="solp-note">Preview Mode: Nothing Is Sent To The Powerwall. Writes Route Through Tesla Cloud (Fleet API) Today; A Local Gateway Fallback Is Planned. No Export, VPP Or Grid Charging Options.</p>
+      <p class="solp-note" id="solp-cloud-note">Preview Mode: Nothing Is Sent To The Powerwall. Writes Route Through Tesla Cloud (Fleet API) Today; A Local Gateway Fallback Is Planned. No Export, VPP Or Grid Charging Options.</p>
       <div><b>Recent Preview Actions</b><ol class="solp-log" id="solp-log"></ol></div>`;
     r.addEventListener("input", (e) => { if (e.target.id === "solp-reserve") $("solp-reserve-val").textContent = e.target.value + "%"; });
     r.addEventListener("click", (e) => { const b = e.target.closest("button[data-act]"); if (b) openConfirm(b.dataset.act); });
@@ -543,12 +543,22 @@
     $("solp-rb-batt").textContent = L.battery_pct != null ? L.battery_pct.toFixed(1) + "%" : "—";
     const a = $("solp-rb-age"); a.textContent = age == null ? "—" : age < 120 ? Math.round(age) + " s Ago" : Math.round(age / 60) + " min Ago";
     a.classList.toggle("amber", age != null && age > 90 && age <= 300); a.classList.toggle("red", age == null || age > 300);
-    const cloudOk = state.ok && age != null && age <= 300;
-    $("solp-rb-cloud").textContent = cloudOk ? "Connected (Tesla Cloud)" : "Down — No Cloud Writes";
-    const disabled = !cloudOk;
+    const illustrative = L.example === true || L.demo === true || L._fixture?.illustrative === true;
+    const cloudOk = !illustrative && state.ok && age != null && age <= 300;
+    const cloudNote = $("solp-cloud-note");
+    if (illustrative) {
+      $("solp-rb-cloud").textContent = "Not connected · illustrative scene";
+      if (cloudNote) cloudNote.textContent = "Illustrative scene. Controls stay off. Nothing is sent to Tesla or the Powerwall.";
+    } else {
+      $("solp-rb-cloud").textContent = cloudOk ? "Connected (Tesla Cloud)" : "Down — No Cloud Writes";
+      if (cloudNote) cloudNote.textContent = "Preview Mode: Nothing Is Sent To The Powerwall. Writes Route Through Tesla Cloud (Fleet API) Today; A Local Gateway Fallback Is Planned. No Export, VPP Or Grid Charging Options.";
+    }
+    const disabled = illustrative || !cloudOk;
     $("solp-rail").dataset.disabled = String(disabled);
     $("solp-disabled-note").hidden = !disabled;
-    $("solp-disabled-note").textContent = !state.ok ? "Controls Disabled — Energy Service Unreachable." : "Controls Disabled — Powerwall Data Is Stale (Over 5 Minutes).";
+    $("solp-disabled-note").textContent = illustrative
+      ? "Controls disabled. This is an example scene, not a Tesla connection, and no command is sent."
+      : (!state.ok ? "Controls Disabled — Energy Service Unreachable." : "Controls Disabled — Powerwall Data Is Stale (Over 5 Minutes).");
     if (L.reserve_pct != null && !$("solp-reserve").dataset.touched) { $("solp-reserve").value = L.reserve_pct; $("solp-reserve-val").textContent = L.reserve_pct + "%"; $("solp-reserve").dataset.touched = "init"; }
     if (L.mode && MODES[L.mode] && !$("solp-mode").dataset.touched) { $("solp-mode").value = L.mode; $("solp-mode").dataset.touched = "init"; }
     const pins = L.house_pins;
@@ -770,13 +780,14 @@
       const charge = L?.vehicle_charge_snapshot, hp = L?.house_pins;
       const at = hp?.athena_as_of || (typeof charge?.timestamp === "number" ? new Date(charge.timestamp).toISOString() : null);
       const asof = at && Number.isFinite(Date.parse(at)) ? `As of ${ct(Date.parse(at))} CT` : "Periodic Snapshot";
+      const exampleReading = L?.example === true || L?.demo === true || L?._fixture?.illustrative === true;
       const pct = charge && num(Number(charge.battery_level)) ? `${Math.round(charge.battery_level)}%` : DASH;
       const range = charge && num(Number(charge.battery_range)) ? `${Math.round(charge.battery_range)} mi` : DASH;
       const state = charge ? (typeof window.athenaWords === "function" ? window.athenaWords(charge) : (charge.charging_state || DASH)) : "Reading Unavailable";
       const alert = $("athena-alert-card");
       html = rows([
         ["Battery", esc(pct)], ["Range", esc(range)], ["State", esc(state)],
-        ["Snapshot", esc(asof)],
+        ["Snapshot", esc(exampleReading ? `Example · ${asof}` : asof)],
         ["Note", "House Load excludes Athena while charging"],
         ["Controls", "Read-Only \u00b7 No Fleet Wake"],
       ]) + (alert && !alert.hidden && alert.textContent ? `<p class="solh-pop-alert">${esc(alert.textContent)}</p>` : "");
@@ -901,7 +912,8 @@
       else if (aKey === "disconnected" || aKey === "unplugged") athPowTxt = "Idle";
       else if (aKey === "complete" || aKey === "stopped" || aKey === "nopower") athPowTxt = "0.00 kW";
       else athPowTxt = athenaKw != null ? Number(athenaKw).toFixed(2) + " kW" : "0.00 kW";
-      al.innerHTML = `<small>${athenaOn ? "House \u2192 Athena" : "Athena"}</small>${athPctTxt} \u00b7 ${athPowTxt}`;
+      const evLegend = window.matchMedia("(max-width: 768px)").matches ? "Athena · vehicle charging" : "House \u2192 Athena";
+      al.innerHTML = `<small>${athenaOn ? evLegend : "Athena"}</small>${athPctTxt} \u00b7 ${athPowTxt}`;
       al.classList.toggle("is-idle", !athenaOn);
     }
     const pct = ok && num(L.battery_pct) ? Math.max(0, Math.min(100, L.battery_pct)) : null;
