@@ -16,5 +16,10 @@
     "axios": "^1.16.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
+  },
+  "overrides": {
+    "follow-redirects": "1.16.3",
+    "qs": "6.16.1",
+    "body-parser": "2.4.0"
   }
 }
